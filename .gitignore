@@ -39,3 +39,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/lib/generated/prisMA
+
+#agents
+.agents
+.claude
+.windsurf
+AGENTS.MD 
+CLAUDE.MD
+
+
+#prisma files and folders
+/lib/generated

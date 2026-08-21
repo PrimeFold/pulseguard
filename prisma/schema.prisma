@@ -1,0 +1,228 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+
+}
+
+enum Role {
+  OWNER
+  MEMBER
+}
+
+enum DocumentType {
+  RUNBOOK
+  ARCHITECTURE_SPEC
+  PAST_INCIDENT_RCA
+  API_DOC
+}
+
+model User {
+  id                  String               @id
+  name                String
+  email               String
+  emailVerified       Boolean              @default(false)
+  image               String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  sessions            Session[]
+  accounts            Account[]
+  organizationMembers OrganizationMember[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  issuer                String
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([issuer, accountId], map: "account_issuer_accountId_uidx")
+  @@index([userId])
+  @@map("account")
+}
+
+model Organization {
+  id        String               @id @default(cuid())
+  name      String
+  slug      String               @unique
+  apiKeys   ApiKey[]
+  members   OrganizationMember[]
+  documents Document[]
+  incidents Incident[]
+  logs      TelemetryLog[]
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+}
+
+model OrganizationMember {
+  id             String       @id @default(cuid())
+  role           Role         @default(MEMBER)
+  userId         String
+  organizationId String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+}
+
+model ApiKey {
+  id             String       @id @default(cuid())
+  name           String
+  keyHash        String       @unique
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  lastUsedAt     DateTime?
+}
+
+model Document {
+  id             String          @id @default(cuid())
+  title          String
+  sourceUrl      String?
+  type           DocumentType    @default(RUNBOOK)
+  content        String          @db.Text
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  chunks         DocumentChunk[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([organizationId])
+}
+
+model DocumentChunk {
+  id         String                       @id @default(cuid())
+  documentId String
+  document   Document                     @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  chunkIndex Int
+  content    String                       @db.Text
+  metadata   Json?
+  // 1536 dimensions for text-embedding-3-small
+  embedding  Unsupported("vector(1536)")?
+  createdAt  DateTime                     @default(now())
+
+  @@index([documentId])
+}
+
+// ----------------------------------------------------
+// TELEMETRY & INCIDENTS
+// ----------------------------------------------------
+
+enum IncidentStatus {
+  TRIGGERED
+  INVESTIGATING
+  MITIGATED
+  RESOLVED
+  FAILED
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model Incident {
+  id                String           @id @default(cuid())
+  title             String
+  service           String
+  severity          Severity         @default(HIGH)
+  status            IncidentStatus   @default(TRIGGERED)
+  errorPayload      Json
+  rootCauseAnalysis String?          @db.Text
+  organizationId    String
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  executions        AgentExecution[]
+  createdAt         DateTime         @default(now())
+  resolvedAt        DateTime?
+
+  @@index([organizationId, status])
+}
+
+model TelemetryLog {
+  id             String       @id @default(cuid())
+  service        String
+  level          String // error, warn, info
+  message        String       @db.Text
+  stackTrace     String?      @db.Text
+  metadata       Json?
+  timestamp      DateTime     @default(now())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, service, timestamp(sort: Desc)])
+}
+
+// ----------------------------------------------------
+//  AGENT EXECUTION TRACE & DETERMINISTIC ACTIONS
+// ----------------------------------------------------
+
+enum ActionStatus {
+  PENDING_APPROVAL
+  EXECUTING
+  SUCCESS
+  FAILED
+  REJECTED
+}
+
+model AgentExecution {
+  id             String        @id @default(cuid())
+  incidentId     String
+  incident       Incident      @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  model          String // e.g. claude-3-5-sonnet-20241022
+  reasoningTrace Json? // Steps, thought process, and intermediate tokens
+  totalTokens    Int           @default(0)
+  durationMs     Int?
+  actions        AgentAction[]
+  createdAt      DateTime      @default(now())
+
+  @@index([incidentId])
+}
+
+model AgentAction {
+  id            String         @id @default(cuid())
+  executionId   String
+  execution     AgentExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  toolName      String // e.g. "query_logs", "search_runbooks", "create_github_pr"
+  toolInput     Json
+  toolOutput    Json?
+  status        ActionStatus   @default(SUCCESS)
+  humanApproved Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+
+  @@index([executionId])
+}
