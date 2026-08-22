@@ -1,3 +1,4 @@
+import { Prisma } from "@/lib/generated/prisma/client";
 import { Severity } from "@/lib/generated/prisma/enums";
 
 export interface ResolveIncidentParams {
@@ -6,10 +7,10 @@ export interface ResolveIncidentParams {
   organizationId: string;
 }
 
-export interface createIncidentParams{
-    title:string; 
-    service:string;
-    severity:Severity;
-    errorPayload:Record<string,any>;
-    organizationId:string
+export interface IncidentParams {
+  title: string;
+  service: string;
+  severity: Severity;
+  errorPayload: Prisma.InputJsonValue;
+  organizationId: string;
 }

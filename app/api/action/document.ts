@@ -1,4 +1,5 @@
 "use server";
+import { IngestDocumentParams } from "@/app/types/docment";
 import { prisma } from "@/lib/auth";
 import { DocumentType } from "@/lib/generated/prisma/enums";
 import { parseFileToText } from "@/lib/parse-file";
@@ -7,13 +8,6 @@ import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { embedMany } from "ai";
 import { revalidatePath } from "next/cache";
 
-interface IngestDocumentParams {
-  organizationId: string;
-  title: string;
-  type: DocumentType;
-  rawContent: string;
-  sourceUrl?: string;
-}
 
 
 export async function IngestDocument({
@@ -86,7 +80,11 @@ export async function IngestDocument({
 export async function uploadDocumentAction(formData: FormData) {
   const file = formData.get('file') as File;
   const title = (formData.get('title') as string) || file.name;
-  const type = (formData.get('type') as DocumentType) || 'RUNBOOK';
+  const rawType = formData.get('type');
+  const type =
+    typeof rawType === 'string' && rawType in DocumentType
+      ? (rawType as DocumentType)
+      : DocumentType.RUNBOOK;
   const organizationId = formData.get('organizationId') as string;
 
   if (!file) {
@@ -107,5 +105,4 @@ export async function uploadDocumentAction(formData: FormData) {
     rawContent: rawText,
   });
 }
-
 

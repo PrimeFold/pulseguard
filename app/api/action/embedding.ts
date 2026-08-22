@@ -4,8 +4,12 @@ import { embed } from "ai";
 
 export async function getVectorEmbeddingString(text:string):Promise<string>{
     try {
+        const embeddingModel = process.env.EMBEDDING_MODEL;
+        if(!embeddingModel){
+            throw new Error("Embedding model not defined..")
+        }
         const { embedding } = await embed({
-            model: google.embeddingModel("gemini-embedding-001"),
+            model: google.embeddingModel(embeddingModel),
             value:text,
             providerOptions:{
                 google:{
