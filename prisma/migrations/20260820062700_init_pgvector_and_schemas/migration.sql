@@ -13,6 +13,9 @@ CREATE TYPE "Severity" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL');
 -- CreateEnum
 CREATE TYPE "ActionStatus" AS ENUM ('PENDING_APPROVAL', 'EXECUTING', 'SUCCESS', 'FAILED', 'REJECTED');
 
+-- Enable pgvector before any table declares vector columns.
+CREATE EXTENSION IF NOT EXISTS vector;
+
 -- CreateTable
 CREATE TABLE "user" (
     "id" TEXT NOT NULL,

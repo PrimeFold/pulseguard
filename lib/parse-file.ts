@@ -1,6 +1,5 @@
 "use server"
 import { extractText, getDocumentProxy } from 'unpdf';
-import { DocumentType } from './generated/prisma/enums';
 export async function parseFileToText(file:File):Promise<string>{
     const extension = file.name.split('.').pop()?.toLocaleLowerCase();
     switch(extension){

@@ -83,6 +83,9 @@ model Organization {
   documents Document[]
   incidents Incident[]
   logs      TelemetryLog[]
+  githubInstallationId Int?
+  githubOwner String?
+  githubDefaultRepo String?
   createdAt DateTime             @default(now())
   updatedAt DateTime             @updatedAt
 }
@@ -130,8 +133,8 @@ model DocumentChunk {
   chunkIndex Int
   content    String                       @db.Text
   metadata   Json?
-  // 1536 dimensions for text-embedding-3-small
-  embedding  Unsupported("vector(1536)")?
+  
+  embedding  Unsupported("vector(736)")?
   createdAt  DateTime                     @default(now())
 
   @@index([documentId])

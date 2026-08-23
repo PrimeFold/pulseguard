@@ -2,7 +2,7 @@ import { google } from "@ai-sdk/google";
 import { embed } from "ai";
 
 
-export async function getVectorEmbeddingString(text:string):Promise<string>{
+export async function getEmbeddingVectorString(text:string):Promise<string>{
     try {
         const embeddingModel = process.env.EMBEDDING_MODEL;
         if(!embeddingModel){
@@ -23,7 +23,6 @@ export async function getVectorEmbeddingString(text:string):Promise<string>{
         throw new Error((error as Error).message);
     }
 }
-
 
 
 
