@@ -78,7 +78,8 @@ export async function createFixPullRequest({
 
         } catch (error) {
             // 404 means the file doesn't exist yet (creating a new file)
-            if (error.status !== 404) throw error;
+            const status = (error as { status?: number }).status;
+            if (status !== 404) throw error;
         }
 
         // 4. Commit updated file contents (must be base64-encoded)
@@ -112,6 +113,5 @@ export async function createFixPullRequest({
    }
 
 }
-
 
 

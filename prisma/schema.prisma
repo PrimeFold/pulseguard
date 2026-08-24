@@ -11,6 +11,7 @@ datasource db {
 enum Role {
   OWNER
   MEMBER
+  ADMIN
 }
 
 enum DocumentType {
@@ -19,6 +20,7 @@ enum DocumentType {
   PAST_INCIDENT_RCA
   API_DOC
 }
+
 
 model User {
   id                  String               @id
@@ -78,7 +80,8 @@ model Organization {
   id        String               @id @default(cuid())
   name      String
   slug      String               @unique
-  apiKeys   ApiKey[]
+  apiKeyDisplay    String?
+  apiKeyHash String?
   members   OrganizationMember[]
   documents Document[]
   incidents Incident[]
@@ -101,15 +104,6 @@ model OrganizationMember {
   @@unique([userId, organizationId])
 }
 
-model ApiKey {
-  id             String       @id @default(cuid())
-  name           String
-  keyHash        String       @unique
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  createdAt      DateTime     @default(now())
-  lastUsedAt     DateTime?
-}
 
 model Document {
   id             String          @id @default(cuid())
@@ -176,10 +170,17 @@ model Incident {
   @@index([organizationId, status])
 }
 
+enum Level {
+  INFO
+  WARN
+  ERROR
+  FATAL
+}
+
 model TelemetryLog {
   id             String       @id @default(cuid())
   service        String
-  level          String // error, warn, info
+  level          Level 
   message        String       @db.Text
   stackTrace     String?      @db.Text
   metadata       Json?

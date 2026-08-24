@@ -183,3 +183,15 @@ export async function updateIncidentStatus(
     throw new Error((error as Error).message);
   }
 }
+
+export async function getIncidents(organizationId:string){
+  try {
+    const incidents = await prisma.incident.findMany({
+      take:10
+    });
+    return incidents;
+  } catch (error) {
+    throw new Error((error as Error).message);
+  }
+}
+

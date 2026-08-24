@@ -8,6 +8,8 @@ import {
   createFixPullRequest,
 } from "../github";
 
+const telemetryLevels = ["INFO", "WARN", "ERROR", "FATAL"] as const;
+
 export function createIncidentTools(organizationId: string) {
   return {
     // Tool 1: Query telemetry logs
@@ -21,7 +23,7 @@ export function createIncidentTools(organizationId: string) {
           .optional()
           .describe('Filter by microservice name, e.g. "auth-service"'),
 
-        level: z.enum(["INFO", "WARN", "ERROR"]).default("ERROR"),
+        level: z.enum(telemetryLevels).default("ERROR"),
 
         fromDate: z.string().optional().describe("ISO timestamp start window"),
 
