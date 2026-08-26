@@ -1,7 +1,10 @@
+'use server';
+
 import { prisma } from "@/lib/auth";
-import { getUser } from "@/lib/session";
-
-
+import {
+  requireOrganizationMembership,
+  requireOrganizationRole,
+} from '@/lib/authorization';
 
 // Helper: Generates secure hex strings using modern standard Web Crypto
 async function sha256(str:string):Promise<string>{
@@ -19,38 +22,29 @@ function generateRandomHex(byteCount: number): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-
 export async function getSettingsData(organizationId:string){
-    const user = await getUser();
-    if(!user){
-        throw new Error("Unauthorized user");
-    }
     try {
-        //Verify membership and fetch role..
-        const membership = await prisma.organizationMember.findFirst({
+        const { membership } = await requireOrganizationMembership(organizationId);
+        const organization = await prisma.organization.findUnique({
             where:{
-                userId:user.id,
-                organizationId,
+                id: organizationId,
             },
-            include:{
-                organization:{
-                    select:{
-                        id:true,
-                        name:true,
-                        apiKey:true,
-                        githubDefaultRepo:true,
-                        githubInstallationId:true,
-                        githubOwner:true
-                    }
-                }
+            select:{
+                id:true,
+                name:true,
+                apiKeyDisplay:true,
+                githubDefaultRepo:true,
+                githubInstallationId:true,
+                githubOwner:true
             }
         })
-        if(!membership) throw new Error('You do not belong to this organisation..');
-        const role = membership.role || "MEMBER";
+        if (!organization) throw new Error('Organization not found.');
+
+        const role = membership.role;
         const canManageIntegrations = ['OWNER','ADMIN'].includes(role);
 
         return{
-            organization:membership.organization,
+            organization,
             role,
             canManageIntegrations
         }
@@ -63,23 +57,8 @@ export async function getSettingsData(organizationId:string){
 
 
 export async function generateApiKey(organizationId:string){
-    const user = await getUser();
-    if(!user) throw new Error('Unauthorized..');
     try {
-        const membership = await prisma.organizationMember.findFirst({
-            where:{
-                userId:user.id,
-                organizationId
-            }
-        })
-
-        if(!membership) throw new Error("You do not belong to this organisation..")
-
-        const role = (membership as any).role || 'MEMBER';
-
-        if(!['OWNER','ADMIN'].includes(role)){
-            throw new Error("Only admins and owners can regenerate API keys..")
-        }
+        await requireOrganizationRole(organizationId, ['OWNER', 'ADMIN']);
 
         const rawKey = `sk_live_${generateRandomHex(24)}`;
         const keyHash = await sha256(rawKey);
@@ -104,4 +83,3 @@ export async function generateApiKey(organizationId:string){
         throw new Error((error as Error).message)
     }
 }
-

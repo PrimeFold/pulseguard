@@ -1,3 +1,5 @@
+'use server';
+
 import { prisma } from "@/lib/auth";
 import { IngestDocument } from "./document";
 import { revalidatePath } from "next/cache";
@@ -6,6 +8,10 @@ import { Prisma } from "@/lib/generated/prisma/client";
 import { IncidentParams, ResolveIncidentParams } from "@/app/types/incident";
 import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
+import {
+  requireIncidentAccess,
+  requireOrganizationMembership,
+} from '@/lib/authorization';
 
 export async function resolveIncidentAndEmbedRCA({
   incidentId,
@@ -13,6 +19,7 @@ export async function resolveIncidentAndEmbedRCA({
   organizationId,
 }: ResolveIncidentParams) {
   try {
+    const incidentToResolve = await requireIncidentAccess(incidentId, organizationId);
     const incident = await prisma.incident.update({
       where: {
         id: incidentId,
@@ -20,14 +27,13 @@ export async function resolveIncidentAndEmbedRCA({
       data: {
         status: "RESOLVED",
         rootCauseAnalysis,
-        organizationId,
         resolvedAt: new Date(),
       },
     }); //Kinda confused , how do I handle an error that happens fromt he db side lets say..
 
     await IngestDocument({
       organizationId,
-      title: `Post-Mortem : ${incident.title} ${incident.service}`,
+      title: `Post-Mortem : ${incidentToResolve.title} ${incidentToResolve.service}`,
       type: `PAST_INCIDENT_RCA`,
       rawContent: rootCauseAnalysis,
       sourceUrl: `/dashboard/incidents/${incident.id}`,
@@ -53,6 +59,7 @@ export async function createIncidentAction(data: IncidentParams) {
   //As for now we can store these but with time we can poll the 'period' and delete the incidents
   // to free storage..
   try {
+    await requireOrganizationMembership(data.organizationId);
     const { title, service, severity, errorPayload, organizationId, status, id } =
       await prisma.incident.create({
         data: {
@@ -165,10 +172,12 @@ async function generateRca({
 
 //Updating the incident status
 export async function updateIncidentStatus(
+  organizationId: string,
   incidentId: string,
   status: IncidentStatus,
 ) {
   try {
+    await requireIncidentAccess(incidentId, organizationId);
     const incident = await prisma.incident.update({
       where: {
         id: incidentId,
@@ -186,7 +195,9 @@ export async function updateIncidentStatus(
 
 export async function getIncidents(organizationId:string){
   try {
+    await requireOrganizationMembership(organizationId);
     const incidents = await prisma.incident.findMany({
+      where: { organizationId },
       take:10
     });
     return incidents;
@@ -195,3 +206,41 @@ export async function getIncidents(organizationId:string){
   }
 }
 
+export interface IncidentFilterParams {
+  organizationId: string;
+  status?: string;
+}
+
+export async function getIncidentsList({
+  organizationId,
+  status,
+}: IncidentFilterParams) {
+  await requireOrganizationMembership(organizationId);
+
+  const whereClause: Prisma.IncidentWhereInput = { organizationId };
+
+  if (status && status !== 'ALL') {
+    whereClause.status = status;
+  }
+
+  const [incidents, stats] = await Promise.all([
+    prisma.incident.findMany({
+      where: whereClause,
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.incident.groupBy({
+      by: ['status'],
+      where: { organizationId },
+      _count: { id: true },
+    }),
+  ]);
+
+  const counts = {
+    ALL: incidents.length,
+    OPEN: stats.find((s) => s.status === 'TRIGGERED')?._count.id || 0,
+    INVESTIGATING: stats.find((s) => s.status === 'INVESTIGATING')?._count.id || 0,
+    RESOLVED: stats.find((s) => s.status === 'RESOLVED')?._count.id || 0,
+  };
+
+  return { incidents, counts };
+}

@@ -7,6 +7,7 @@ import { google } from "@ai-sdk/google";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { embedMany } from "ai";
 import { revalidatePath } from "next/cache";
+import { requireOrganizationMembership } from '@/lib/authorization';
 
 
 
@@ -18,6 +19,7 @@ export async function IngestDocument({
     sourceUrl
 }:IngestDocumentParams){
     try {
+        await requireOrganizationMembership(organizationId);
         const splitter = new RecursiveCharacterTextSplitter({
             chunkSize:600,
             chunkOverlap:60,
@@ -78,7 +80,12 @@ export async function IngestDocument({
 
 //This function takes the file and puts it through parsing , then it takes the raw text and feeds it to ingestion function..
 export async function uploadDocumentAction(formData: FormData) {
-  const file = formData.get('file') as File;
+  const file = formData.get('file');
+
+  if (!(file instanceof File)) {
+    throw new Error('No file uploaded');
+  }
+
   const title = (formData.get('title') as string) || file.name;
   const rawType = formData.get('type');
   const type =
@@ -86,10 +93,6 @@ export async function uploadDocumentAction(formData: FormData) {
       ? (rawType as DocumentType)
       : DocumentType.RUNBOOK;
   const organizationId = formData.get('organizationId') as string;
-
-  if (!file) {
-    throw new Error('No file uploaded');
-  }
 
   const rawText = await parseFileToText(file);
 
@@ -105,4 +108,3 @@ export async function uploadDocumentAction(formData: FormData) {
     rawContent: rawText,
   });
 }
-

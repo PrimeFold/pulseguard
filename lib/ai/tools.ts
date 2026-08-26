@@ -12,7 +12,7 @@ const telemetryLevels = ["INFO", "WARN", "ERROR", "FATAL"] as const;
 
 export function createIncidentTools(organizationId: string) {
   return {
-    // Tool 1: Query telemetry logs
+    // Tool 1: Query telemetry logs..
     query_telemetry_logs: tool({
       description:
         "Query structured error logs and telemetry around an incident timeframe to identify stack traces and failure causes.",
@@ -108,77 +108,6 @@ export function createIncidentTools(organizationId: string) {
         };
       },
     }),
-
-    // Tool 3: Create the pull request fixing the issue
-    create_hotfix_pull_request: tool({
-      description:
-        "Create a hotfix branch, commit updated code, and open a Pull Request.",
-
-      inputSchema: z.object({
-        filePath: z.string().describe("Path of the file being modified"),
-
-        updatedContent: z
-          .string()
-          .describe("Complete updated code for the file"),
-
-        fixBranch: z
-          .string()
-          .describe('Branch name, e.g. "hotfix/increase-db-pool"'),
-
-        commitMessage: z.string().describe("Conventional commit message"),
-
-        prTitle: z.string().describe("Pull request title"),
-
-        prBody: z
-          .string()
-          .describe(
-            "Detailed PR markdown description explaining the fix and root cause",
-          ),
-      }),
-
-      execute: async ({
-        filePath,
-        updatedContent,
-        fixBranch,
-        commitMessage,
-        prTitle,
-        prBody,
-      }) => {
-        const org = await prisma.organization.findUnique({
-          where: {
-            id: organizationId,
-          },
-        });
-
-        if (
-          !org?.githubInstallationId ||
-          !org.githubOwner ||
-          !org.githubDefaultRepo
-        ) {
-          throw new Error("GitHub app not installed for this organization.");
-        }
-
-        const octokit = getInstallationOctokit(org.githubInstallationId);
-
-        const pr = await createFixPullRequest({
-          octokit,
-          owner: org.githubOwner,
-          repo: org.githubDefaultRepo,
-          newBranch: fixBranch,
-          filePath,
-          updatedContent,
-          commitMessage,
-          prTitle,
-          prBody,
-        });
-
-        return {
-          status: "success",
-          prUrl: pr.prUrl,
-          prNumber: pr.prNumber,
-        };
-      },
-    }),
     propose_hotfix: tool({
       description:'Propose a code fix and PR structure for human review before creating the GitHub PR.',
       inputSchema: z.object({
@@ -197,6 +126,5 @@ export function createIncidentTools(organizationId: string) {
         }
       }
     })
-
   };
 }

@@ -52,3 +52,6 @@ CLAUDE.MD
 
 #prisma files and folders
 /lib/generated
+
+# Local working notes (intentionally not part of the public repository)
+PROJECT_MAP.md

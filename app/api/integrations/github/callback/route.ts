@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/auth";
 import { getInstallationOctokit } from "@/lib/github";
-import { getUser } from "@/lib/session";
+import { requireOrganizationRole } from '@/lib/authorization';
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req:NextRequest){
@@ -17,24 +17,10 @@ export async function GET(req:NextRequest){
       );
     }
 
-    const user = await getUser();
-    if(!user){
-        return NextResponse.redirect(
-            new URL('/dashboard/settings?error=missing_params', req.url)
-        );
-    }
-
-
-    const membership = await prisma.organizationMember.findFirst({
-        where:{
-            userId:user.id,
-            organizationId:targetOrgId,
-            role:"OWNER"
-        }
-    })
-
-    if (!membership) {
-        return NextResponse.redirect(
+    try {
+      await requireOrganizationRole(targetOrgId, ['OWNER', 'ADMIN'], req.headers);
+    } catch {
+      return NextResponse.redirect(
             new URL('/dashboard/settings?error=unauthorized_organization', req.url)
         );
     }

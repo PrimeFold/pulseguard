@@ -1,10 +1,12 @@
 'use server';
 
 import { prisma } from "@/lib/auth";
+import { requireIncidentAccess, requireOrganizationMembership } from '@/lib/authorization';
 
 
 //Overall data fetching for the dashboard..
 export async function getDashboardOverview(organizationId:string){
+    await requireOrganizationMembership(organizationId);
     const DAYms = 24*60*60*1000;
     const [activeIncidents, errorCount24h , totalLogs , org] = await Promise.all([
         prisma.incident.findMany({
@@ -54,10 +56,5 @@ export async function getDashboardOverview(organizationId:string){
 
 //fetches an incident by its id and organisation's id..
 export async function getIncidentById(incidentId:string , organizationId:string){
-    return await prisma.incident.findFirst({
-        where:{
-            id:incidentId,
-            organizationId
-        }
-    })
+    return requireIncidentAccess(incidentId, organizationId);
 }

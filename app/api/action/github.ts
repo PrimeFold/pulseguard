@@ -2,9 +2,19 @@
 
 import { prisma } from "@/lib/auth";
 import { createFixPullRequest, getInstallationOctokit } from "@/lib/github";
-import { github } from "better-auth";
+import { requireOrganizationRole } from '@/lib/authorization';
+import type { CreatePullRequestOptions } from '@/app/types/github';
 
-export async function approveAndCreatePR(organizationId:string,proposal:any){
+type PullRequestProposal = Omit<
+  CreatePullRequestOptions,
+  'octokit' | 'owner' | 'repo'
+>;
+
+export async function approveAndCreatePR(
+  organizationId: string,
+  proposal: PullRequestProposal,
+) {
+    await requireOrganizationRole(organizationId, ['OWNER', 'ADMIN']);
     const org = await prisma.organization.findUnique({
         where:{
             id:organizationId

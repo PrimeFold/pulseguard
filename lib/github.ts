@@ -50,7 +50,7 @@ export async function createFixPullRequest({
   prBody,
 }:CreatePullRequestOptions){
    try {
-        const { data : baseRef} = await octokit.rest.git.getRef({
+        const { data : baseRef } = await octokit.rest.git.getRef({
             owner,
             repo,
             ref:`heads/${baseBranch}`
@@ -65,6 +65,7 @@ export async function createFixPullRequest({
         })
 
         let fileSha : string | undefined;
+
         try {
             const { data : existingFile } = await octokit.rest.repos.getContent({
                 owner,

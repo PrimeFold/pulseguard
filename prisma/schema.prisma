@@ -12,6 +12,8 @@ enum Role {
   OWNER
   MEMBER
   ADMIN
+  ASSISTANT
+  VIEWER
 }
 
 enum DocumentType {
@@ -81,7 +83,7 @@ model Organization {
   name      String
   slug      String               @unique
   apiKeyDisplay    String?
-  apiKeyHash String?
+  apiKeyHash String? @unique
   members   OrganizationMember[]
   documents Document[]
   incidents Incident[]
@@ -91,18 +93,47 @@ model Organization {
   githubDefaultRepo String?
   createdAt DateTime             @default(now())
   updatedAt DateTime             @updatedAt
+
+  agentExecutions AgentExecution[]
+
+  organizationInvites OrganizationInvite[]
 }
 
 model OrganizationMember {
   id             String       @id @default(cuid())
   role           Role         @default(MEMBER)
   userId         String
-  organizationId String
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
+  createdAt      DateTime  @default(now())
   @@unique([userId, organizationId])
 }
+
+//Invites
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+}
+
+model OrganizationInvite {
+  id             String       @id @default(cuid())
+  token          String       @unique
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  invitedEmail   String?      // Optional: restrict to specific email or allow link-sharing
+  role           Role         @default(MEMBER)
+  status         InviteStatus @default(PENDING)
+  
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+
+  @@index([token])
+  @@index([organizationId])
+}
+
 
 
 model Document {
@@ -168,6 +199,17 @@ model Incident {
   resolvedAt        DateTime?
 
   @@index([organizationId, status])
+  incidentMessages IncidentMessage[]
+}
+
+
+
+model IncidentMessage{
+  id String @id @default(cuid())
+  role Role @default(ASSISTANT)
+  incidentId String 
+  incident Incident @relation(fields: [incidentId] , references: [id] , onDelete: Cascade)
+  messages String
 }
 
 enum Level {
@@ -205,6 +247,8 @@ enum ActionStatus {
 
 model AgentExecution {
   id             String        @id @default(cuid())
+  organizationId String 
+  organization Organization @relation(fields: [organizationId] , references: [id], onDelete: Cascade)
   incidentId     String
   incident       Incident      @relation(fields: [incidentId], references: [id], onDelete: Cascade)
   model          String // e.g. claude-3-5-sonnet-20241022
@@ -230,3 +274,4 @@ model AgentAction {
 
   @@index([executionId])
 }
+
