@@ -1,35 +1,137 @@
 import { prisma } from "@/lib/auth";
+import { generateErrorFingerprint } from "@/lib/telemetry";
 import { NextRequest, NextResponse } from "next/server";
 
-async function sha256(str: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(str);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-}
+const ANOMALY_WINDOW_MINUTES = 3;
+const ERROR_THRESHOLD = 3;
 
-export async function POST(req:NextRequest){
-    const rawKey = req.headers.get('x-api-key');
-    if(!rawKey || !rawKey.startsWith('sk_live')){
-        return NextResponse.json({error:"Missing or invalid API Key"}, { status:401});
+export async function POST(req: NextRequest) {
+  try {
+    const authHeader = req.headers.get("authorization");
+    const xApiKey = req.headers.get("x-api-key");
+    const searchParams = req.nextUrl.searchParams;
+    const apiKey =
+      (authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : null) ||
+      xApiKey ||
+      searchParams.get("apiKey");
+
+    if (!apiKey) {
+      return NextResponse.json({ error: "Missing API Key" }, { status: 401 });
     }
 
-    //1.Hash incoming raw key using SHA-256
-    const incomingHash = await sha256(rawKey);
+    //Verifying the organization against the API KEY..
+    const org = await prisma.organization.findFirst({
+      where: { id: apiKey },
+    });
 
-    // 2. Direct lookup by unique hash in Postgres
-    const org = await prisma.organization.findUnique({
-        where:{apiKeyHash:incomingHash},
-        select:{id:true}
-    })
-
-    if(!org){
-        return NextResponse.json({error:'Unauthorized key'},{status:401});
+    if (!org) {
+      return NextResponse.json({ error: "Invalid API Key" }, { status: 403 });
     }
 
-    return NextResponse.json({status:'ok',organizationId:org.id})
+    const body = await req.json();
+    const rawLogs = Array.isArray(body) ? body : [body];
+
+    const processedLogs = rawLogs.map((log: any) => {
+      const level = (log.level || log.severity || "INFO").toUpperCase();
+      const message = String(log.message || log.msg || "");
+      const service = log.service || log.source || "default-service";
+
+      let fingerprint: string | null = null;
+      let cleanPattern = message;
+
+      if (level === "ERROR" || level === "FATAL") {
+        const res = generateErrorFingerprint(service, message);
+        fingerprint = res.fingerprint;
+        cleanPattern = res.cleanPattern;
+      }
+
+      return {
+        organizationId: org.id,
+        service,
+        level,
+        message,
+        fingerprint,
+        cleanPattern,
+        timestamp: log.timestamp ? new Date(log.timestamp) : new Date(),
+        metadata: log.metadata || {},
+      };
+    });
+
+    // 1. Group incoming error logs by fingerprint
+    const errorGroups = new Map<string, typeof processedLogs>();
+
+    for (const log of processedLogs) {
+      if (log.fingerprint) {
+        if (!errorGroups.has(log.fingerprint)) {
+          errorGroups.set(log.fingerprint, []);
+        }
+        errorGroups.get(log.fingerprint)!.push(log);
+      }
+    }
+
+    // 2. Classify against existing Incidents or create new ones
+    const windowStart = new Date(
+      Date.now() - ANOMALY_WINDOW_MINUTES * 60 * 1000,
+    );
+
+    for (const [fingerprint, logs] of errorGroups.entries()) {
+      const sample = logs[0];
+
+      // Check if an open incident already tracks this specific error signature
+      let incident = await prisma.incident.findFirst({
+        where: {
+          organizationId: org.id,
+          fingerprint,
+          status: "TRIGGERED",
+        },
+      });
+
+      if (!incident) {
+        // Count previous occurrences of this fingerprint within the window
+        const pastCount = await prisma.telemetryLog.count({
+          where: {
+            organizationId: org.id,
+            fingerprint,
+            timestamp: { gte: windowStart },
+          },
+        });
+
+        if (pastCount + logs.length >= ERROR_THRESHOLD) {
+          // Open a new, cleanly classified incident..
+          incident = await prisma.incident.create({
+            data: {
+              organizationId: org.id,
+              service: sample.service,
+              fingerprint,
+              title: `${sample.service}: ${sample.cleanPattern.slice(0, 75)}...`,
+              description: `Automated incident triggered by error cluster.\nSignature: \`${sample.cleanPattern}\``,
+              severity: "HIGH",
+              status: "TRIGGERED",
+              errorPayload: sample.metadata || { message: sample.message },
+            },
+          });
+        }
+      }
+
+      // Link logs to the incident if one exists
+      if (incident) {
+        logs.forEach((l) => {
+          (l as any).incidentId = incident.id;
+        });
+      }
+    }
+
+    // 3. Batch insert the classified logs
+    await prisma.telemetryLog.createMany({
+      data: processedLogs.map(({ cleanPattern, ...log }) => log),
+    });
+
+    return NextResponse.json({
+      success: true,
+      ingested: processedLogs.length,
+      classifiedErrors: errorGroups.size,
+    });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }
-
-
-

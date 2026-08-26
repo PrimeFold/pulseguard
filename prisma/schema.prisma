@@ -197,6 +197,8 @@ model Incident {
   executions        AgentExecution[]
   createdAt         DateTime         @default(now())
   resolvedAt        DateTime?
+  fingerprint    String?          
+  description    String?
 
   @@index([organizationId, status])
   incidentMessages IncidentMessage[]
@@ -217,6 +219,7 @@ enum Level {
   WARN
   ERROR
   FATAL
+  DEBUG
 }
 
 model TelemetryLog {
@@ -229,8 +232,11 @@ model TelemetryLog {
   timestamp      DateTime     @default(now())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  fingerprint    String?
+  incidentId     String?       // Linked to classified incident
 
   @@index([organizationId, service, timestamp(sort: Desc)])
+  agentExecutions AgentExecution[]
 }
 
 // ----------------------------------------------------
@@ -257,6 +263,8 @@ model AgentExecution {
   durationMs     Int?
   actions        AgentAction[]
   createdAt      DateTime      @default(now())
+  fingerprint    String
+  log TelemetryLog[]
 
   @@index([incidentId])
 }

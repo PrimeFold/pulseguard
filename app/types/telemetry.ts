@@ -20,3 +20,11 @@ export interface GetTelemetryParams {
   page?: number;
   limit?: number;
 }
+
+export interface NormalizedLog {
+  level: 'ERROR' | 'FATAL' | 'WARN' | 'INFO' | 'DEBUG';
+  message: string;
+  service: string;
+  timestamp?: Date;
+  metadata?: Record<string, any>;
+}

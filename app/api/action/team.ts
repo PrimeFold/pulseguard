@@ -7,13 +7,29 @@ import { prisma } from "@/lib/auth";
 import { requireOrganizationMembership } from "@/lib/authorization";
 import { OrganizationMember, Prisma } from "@/lib/generated/prisma/client";
 
+
+export type OrganizationMemberWithUser = Prisma.OrganizationMemberGetPayload<{
+  include:{
+    user:{
+      select:{
+        id:true,
+        name:true,
+        email:true,
+        image:true
+      }
+    }
+  }
+}>
+
+
+
 export async function getTeamMembers({
   organizationId,
   page = 1,
   limit = 10,
   role,
   searchQuery,
-}: TeamParams): Promise<TeamPaginationResponse<OrganizationMember>> {
+}: TeamParams): Promise<TeamPaginationResponse<OrganizationMemberWithUser>> {
   try {
     const membership = await requireOrganizationMembership(organizationId);
     if (!membership) {
