@@ -118,7 +118,7 @@ export default function DocsPage() {
                 <li><strong className="text-zinc-200">Framework:</strong> Next.js 16 (App Router), React 19, TypeScript</li>
                 <li><strong className="text-zinc-200">Database:</strong> PostgreSQL 16 with pgvector extension via Prisma ORM</li>
                 <li><strong className="text-zinc-200">Distributed Cache:</strong> Redis (ioredis) for rate limiting &amp; deduplication</li>
-                <li><strong className="text-zinc-200">AI Framework:</strong> Vercel AI SDK (streamText) with Gemini 3.5 / Claude 3.5</li>
+                <li><strong className="text-zinc-200">AI Framework:</strong> Vercel AI SDK (streamText) with user-configured AI provider and model</li>
                 <li><strong className="text-zinc-200">Git Integration:</strong> Octokit with fine-grained GitHub App tokens</li>
               </ul>
             </div>
@@ -253,7 +253,7 @@ export default function DocsPage() {
               Document Ingestion &amp; Vector Embeddings
             </h2>
             <p className="text-sm text-zinc-400 font-sans">
-              PDF and Markdown runbooks are parsed into 600-character chunks with 60-character overlap. Embeddings are generated using Gemini embedding models and indexed via PostgreSQL <code className="text-zinc-200 bg-zinc-900 px-1 border border-zinc-800">::vector</code>.
+              PDF and Markdown runbooks are parsed into 600-character chunks with 60-character overlap. Embeddings are generated using the organization's configured embedding model and indexed via PostgreSQL <code className="text-zinc-200 bg-zinc-900 px-1 border border-zinc-800">::vector</code>.
             </p>
 
             <div className="border border-zinc-800 bg-black p-4 font-mono text-xs text-zinc-300 overflow-x-auto space-y-2">
