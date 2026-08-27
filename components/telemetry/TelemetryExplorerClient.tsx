@@ -100,7 +100,7 @@ export function TelemetryExplorerClient({
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Select value={selectedService} onValueChange={setSelectedService}>
+          <Select value={selectedService} onValueChange={(val) => setSelectedService(val || 'ALL')}>
             <SelectTrigger className="w-[140px] text-xs bg-background/50 border-border/60">
               <SelectValue placeholder="Service" />
             </SelectTrigger>
@@ -112,7 +112,7 @@ export function TelemetryExplorerClient({
             </SelectContent>
           </Select>
 
-          <Select value={selectedLevel} onValueChange={setSelectedLevel}>
+          <Select value={selectedLevel} onValueChange={(val) => setSelectedLevel(val || 'ALL')}>
             <SelectTrigger className="w-[110px] text-xs bg-background/50 border-border/60">
               <SelectValue placeholder="Level" />
             </SelectTrigger>

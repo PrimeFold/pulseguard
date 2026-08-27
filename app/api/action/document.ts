@@ -3,13 +3,11 @@ import { IngestDocumentParams } from "@/app/types/docment";
 import { prisma } from "@/lib/auth";
 import { DocumentType } from "@/lib/generated/prisma/enums";
 import { parseFileToText } from "@/lib/parse-file";
-import { google } from "@ai-sdk/google";
+import { getOrgEmbeddingModel } from "@/lib/ai/provider";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { embedMany } from "ai";
 import { revalidatePath } from "next/cache";
 import { requireOrganizationMembership } from '@/lib/authorization';
-
-
 
 export async function IngestDocument({
     organizationId,
@@ -32,12 +30,14 @@ export async function IngestDocument({
             throw new Error("Document is empty , no content to be found.")
         }        
 
+        const embeddingModel = await getOrgEmbeddingModel(organizationId);
+
         const {embeddings} = await embedMany({
-            model:google.embeddingModel("gemini-embedding-2"),
+            model: embeddingModel as any,
             values:rawChunks
         })
         
-        return await prisma.$transaction(async(tx)=>{
+        return await prisma.$transaction(async(tx: any)=>{
             const document = await tx.document.create({
                 data:{
                     title,

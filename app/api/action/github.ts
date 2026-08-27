@@ -31,7 +31,7 @@ export async function approveAndCreatePR(
         octokit,
         owner:org.githubOwner,
         repo:org.githubDefaultRepo,
-        newBranch:proposal.fixBranch,
+        newBranch: proposal.newBranch || (proposal as any).fixBranch || `hotfix/patch-${Date.now()}`,
         filePath:proposal.filePath,
         updatedContent:proposal.updatedContent,
         commitMessage: proposal.commitMessage,

@@ -91,6 +91,11 @@ model Organization {
   githubInstallationId Int?
   githubOwner String?
   githubDefaultRepo String?
+  aiProvider          String?             @default("google")
+  aiModel             String?             @default("gemini-1.5-flash")
+  aiApiKeyEncrypted   String?
+  aiApiKeyDisplay     String?
+  aiEmbeddingModel    String?             @default("text-embedding-004")
   createdAt DateTime             @default(now())
   updatedAt DateTime             @updatedAt
 

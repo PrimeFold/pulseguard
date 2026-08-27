@@ -16,7 +16,7 @@ const logSchema = z.object({
   service: z.string().optional(),
   source: z.string().optional(),
   timestamp: z.string().or(z.date()).or(z.number()).optional(),
-  metadata: z.record(z.any()).optional().default({}),
+  metadata: z.record(z.string(), z.any()).optional().default({}),
 });
 
 const payloadSchema = z.union([logSchema, z.array(logSchema)]);
@@ -149,9 +149,10 @@ export async function POST(req: NextRequest) {
       }
 
       // Link logs to the incident if one exists
-      if (incident) {
+      if (incident && incident.id) {
+        const incidentIdToLink = incident.id;
         logs.forEach((l) => {
-          (l as any).incidentId = incident.id;
+          (l as any).incidentId = incidentIdToLink;
         });
       }
     }

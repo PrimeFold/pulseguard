@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { getOrganizationAndMembership } from '@/lib/tenant';
-i
+import type { Role } from '@/lib/generated/prisma/enums';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,6 @@ import { Users, ChevronLeft, ChevronRight, ShieldCheck, UserCheck, Eye } from 'l
 import { getTeamMembers } from '@/app/api/action/team';
 import { TeamFilterBar } from '@/components/teams/TeamFilterBar';
 import { InviteMemberDialog } from '@/components/invites/InviteMemberModal';
-
 
 interface PageProps {
   params: Promise<{ orgSlug: string }>;
@@ -53,7 +52,7 @@ export default async function TeamSettingsPage({ params, searchParams }: PagePro
           </p>
         </div>
 
-        {isAdmin && <InviteMemberDialog organizationId={org.id} orgSlug={org.slug} />}
+        {isAdmin && <InviteMemberDialog organizationId={org.id} />}
       </div>
 
       {/* Filter & Search Bar */}
@@ -136,11 +135,11 @@ export default async function TeamSettingsPage({ params, searchParams }: PagePro
             <Button
               variant="outline"
               size="sm"
-              disabled={!metadata.hasPrevPage}
-              asChild={metadata.hasPrevPage}
+              disabled={!metadata.hasPreviousPage}
+              asChild={metadata.hasPreviousPage}
               className="h-7 text-xs border-zinc-800 bg-zinc-900/60 hover:bg-zinc-800"
             >
-              {metadata.hasPrevPage ? (
+              {metadata.hasPreviousPage ? (
                 <Link href={`/${orgSlug}/settings/team?page=${currentPage - 1}${q ? `&q=${q}` : ''}${role ? `&role=${role}` : ''}`}>
                   <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Previous
                 </Link>

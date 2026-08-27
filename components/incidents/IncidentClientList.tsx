@@ -162,7 +162,7 @@ export function IncidentListClient({
                   </div>
 
                   <div>
-                    <h2 className="text-sm font-semibold text-foreground group-hover:text-purple-300 transition-colors">
+                    <h2 className="text-sm font-semibold text-foreground group-hover:text-white transition-colors">
                       {incident.title}
                     </h2>                
                   </div>
@@ -172,7 +172,7 @@ export function IncidentListClient({
                   <Button
                     size="sm"
                     asChild
-                    className="gap-1.5 text-xs bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-500/20"
+                    className="gap-1.5 text-xs bg-white hover:bg-zinc-200 text-black border border-transparent font-medium"
                   >
                     <Link href={`/dashboard/incidents/${incident.id}`}>
                       <Sparkles className="h-3.5 w-3.5" />

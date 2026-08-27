@@ -1,22 +1,16 @@
-import { google } from "@ai-sdk/google";
+import { getOrgEmbeddingModel } from "@/lib/ai/provider";
 import { embed } from "ai";
 
-
-export async function getEmbeddingVectorString(text:string):Promise<string>{
+export async function getEmbeddingVectorString(text: string, organizationId?: string): Promise<string> {
     try {
-        const embeddingModel = process.env.EMBEDDING_MODEL;
-        if(!embeddingModel){
-            throw new Error("Embedding model not defined..")
-        }
+        const model = organizationId
+          ? await getOrgEmbeddingModel(organizationId)
+          : (await import("@ai-sdk/google")).google.textEmbeddingModel(process.env.EMBEDDING_MODEL || "text-embedding-004");
+
         const { embedding } = await embed({
-            model: google.embeddingModel(embeddingModel),
-            value:text,
-            providerOptions:{
-                google:{
-                    outputDimensionality:1536
-                }
-            }
-        })
+            model: model as any,
+            value: text,
+        });
 
         return `[${embedding.join(",")}]`;
     } catch (error) {

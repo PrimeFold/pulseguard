@@ -220,7 +220,7 @@ export async function getIncidentsList({
   const whereClause: Prisma.IncidentWhereInput = { organizationId };
 
   if (status && status !== 'ALL') {
-    whereClause.status = status;
+    whereClause.status = status as IncidentStatus;
   }
 
   const [incidents, stats] = await Promise.all([
@@ -237,9 +237,9 @@ export async function getIncidentsList({
 
   const counts = {
     ALL: incidents.length,
-    OPEN: stats.find((s) => s.status === 'TRIGGERED')?._count.id || 0,
-    INVESTIGATING: stats.find((s) => s.status === 'INVESTIGATING')?._count.id || 0,
-    RESOLVED: stats.find((s) => s.status === 'RESOLVED')?._count.id || 0,
+    OPEN: stats.find((s: any) => s.status === 'TRIGGERED')?._count.id || 0,
+    INVESTIGATING: stats.find((s: any) => s.status === 'INVESTIGATING')?._count.id || 0,
+    RESOLVED: stats.find((s: any) => s.status === 'RESOLVED')?._count.id || 0,
   };
 
   return { incidents, counts };

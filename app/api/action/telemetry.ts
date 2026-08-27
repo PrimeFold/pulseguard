@@ -4,6 +4,7 @@ import { PaginationResponse } from "@/app/types/pagination";
 import { GetTelemetryParams, telemetryLog } from "@/app/types/telemetry";
 import { prisma } from "@/lib/auth";
 import { Prisma, TelemetryLog } from "@/lib/generated/prisma/client";
+import type { Level } from "@/lib/generated/prisma/enums";
 import { revalidatePath } from "next/cache";
 import { requireOrganizationMembership } from "@/lib/authorization";
 
@@ -150,7 +151,7 @@ export async function getTelemetryLogs({
   }
 
   if (level && level !== "ALL") {
-    whereClause.level = level;
+    whereClause.level = level as Level;
   }
 
   if (search && search.trim() !== "") {
@@ -175,6 +176,6 @@ export async function getTelemetryLogs({
 
   return {
     logs,
-    services: availableServices.map((s) => s.service),
+    services: availableServices.map((s: any) => s.service),
   };
 }

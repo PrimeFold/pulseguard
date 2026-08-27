@@ -40,7 +40,7 @@ export async function getDashboardOverview(organizationId:string){
                 githubDefaultRepo:true,
                 githubInstallationId:true,
                 githubOwner:true,
-                apiKey:true
+                apiKeyDisplay:true
             }
         })
     ])
@@ -50,7 +50,7 @@ export async function getDashboardOverview(organizationId:string){
         totalLogs,
         isGithubConnected: Boolean(org?.githubInstallationId),
         githubRepo:org?.githubDefaultRepo,
-        apiKey:org?.apiKey || null,
+        apiKey:org?.apiKeyDisplay || null,
     };
 }
 

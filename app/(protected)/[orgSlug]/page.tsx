@@ -68,16 +68,16 @@ export default async function OrgOverviewPage({ params }: OverviewPageProps) {
     const windowStart = now - (hoursAgo + 1) * 60 * 60 * 1000;
     const windowEnd = now - hoursAgo * 60 * 60 * 1000;
 
-    const logsInBucket = recentLogs.filter((l) => {
+    const logsInBucket = recentLogs.filter((l: any) => {
       const t = new Date(l.timestamp).getTime();
       return t >= windowStart && t < windowEnd;
     });
 
     return {
       time: timeLabel,
-      errors: logsInBucket.filter((l) => l.level === 'ERROR' || l.level === 'FATAL').length,
-      warnings: logsInBucket.filter((l) => l.level === 'WARN').length,
-      info: logsInBucket.filter((l) => l.level === 'INFO' || l.level === 'DEBUG').length,
+      errors: logsInBucket.filter((l: any) => l.level === 'ERROR' || l.level === 'FATAL').length,
+      warnings: logsInBucket.filter((l: any) => l.level === 'WARN').length,
+      info: logsInBucket.filter((l: any) => l.level === 'INFO' || l.level === 'DEBUG').length,
     };
   });
 
@@ -181,7 +181,7 @@ export default async function OrgOverviewPage({ params }: OverviewPageProps) {
               No incidents recorded yet. Clean bill of health!
             </div>
           ) : (
-            recentIncidents.map((incident) => (
+            recentIncidents.map((incident: any) => (
               <Link
                 key={incident.id}
                 href={`/${org.slug}/incidents/${incident.id}`}

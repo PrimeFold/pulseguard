@@ -7,6 +7,7 @@ import {
   Flame, 
   Terminal, 
   Users, 
+  Sparkles,
   ArrowLeftRight} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -18,6 +19,7 @@ export function OrgSidebar({ org, userRole }: { org: any; userRole: string; user
     { label: 'Overview', href: base, icon: Activity, exact: true },
     { label: 'War Rooms', href: `${base}/incidents`, icon: Flame },
     { label: 'Telemetry Logs', href: `${base}/telemetry`, icon: Terminal },
+    { label: 'AI & Models', href: `${base}/settings/ai`, icon: Sparkles },
     { label: 'Team & Access', href: `${base}/settings/team`, icon: Users },
   ];
 

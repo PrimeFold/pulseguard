@@ -10,6 +10,7 @@ import { google } from "@ai-sdk/google";
 import { prisma } from "@/lib/auth";
 import { createIncidentTools } from "@/lib/ai/tools";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { getOrgLanguageModel } from "@/lib/ai/provider";
 import { NextRequest } from "next/server";
 
 export const maxDuration = 60;
@@ -21,10 +22,6 @@ export async function POST(req: NextRequest) {
       return new Response(JSON.stringify({ error: "Too many requests" }), { status: 429 });
     }
     const { messages, organizationId, incidentId } = await req.json();
-    const TEXT_MODEL = process.env.TEXT_MODEL;
-    if (!TEXT_MODEL) {
-      return new Response(JSON.stringify({ error: "Model Missing" }));
-    }
 
     if (!organizationId || !incidentId) {
       return new Response(
@@ -51,11 +48,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Dynamic model resolution for organization
+    const aiModel = await getOrgLanguageModel(org.id);
+
     //converting to model messages..
     const modelMessages = await convertToModelMessages(messages);
 
     const result = streamText({
-      model: google("gemini-3.5-flash"),
+      model: aiModel,
       messages: [
         {
           role: "system",
