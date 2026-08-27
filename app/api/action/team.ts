@@ -88,3 +88,62 @@ export async function getTeamMembers({
     throw new Error(error.message || "Failed to fetch team members..");
   }
 }
+
+/**
+ * Updates a member's role within an organization (OWNER or ADMIN required).
+ */
+export async function updateMemberRole(params: {
+  organizationId: string;
+  targetUserId: string;
+  newRole: "ADMIN" | "MEMBER" | "VIEWER";
+}) {
+  const { requireOrganizationRole } = await import("@/lib/authorization");
+  await requireOrganizationRole(params.organizationId, ["OWNER", "ADMIN"]);
+
+  const updated = await prisma.organizationMember.update({
+    where: {
+      userId_organizationId: {
+        userId: params.targetUserId,
+        organizationId: params.organizationId,
+      },
+    },
+    data: {
+      role: params.newRole as any,
+    },
+  });
+
+  return { success: true, member: updated };
+}
+
+/**
+ * Removes a member from an organization (OWNER or ADMIN required).
+ */
+export async function removeMemberFromOrg(params: {
+  organizationId: string;
+  targetUserId: string;
+}) {
+  const { requireOrganizationRole } = await import("@/lib/authorization");
+  const callerAccess = await requireOrganizationRole(params.organizationId, ["OWNER", "ADMIN"]);
+
+  // Prevent removing oneself if they are the only owner
+  if (callerAccess.user.id === params.targetUserId && callerAccess.membership.role === "OWNER") {
+    const ownerCount = await prisma.organizationMember.count({
+      where: { organizationId: params.organizationId, role: "OWNER" },
+    });
+    if (ownerCount <= 1) {
+      throw new Error("Cannot remove the last owner of the workspace.");
+    }
+  }
+
+  await prisma.organizationMember.delete({
+    where: {
+      userId_organizationId: {
+        userId: params.targetUserId,
+        organizationId: params.organizationId,
+      },
+    },
+  });
+
+  return { success: true };
+}
+

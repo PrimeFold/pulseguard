@@ -34,9 +34,9 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    if (!member || member.role !== "ADMIN") {
+    if (!member || (member.role !== "ADMIN" && (member.role as any) !== "OWNER")) {
       return NextResponse.json(
-        { error: "Forbidden : Only admins can invite other members" },
+        { error: "Forbidden : Only owners and admins can invite members" },
         { status: 403 },
       );
     }
