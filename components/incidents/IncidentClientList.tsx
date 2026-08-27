@@ -96,19 +96,19 @@ export function IncidentListClient({
       {/* Top Controls: Status Pills & Search */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         {/* Status Filter Tabs */}
-        <div className="flex items-center gap-1.5 p-1 bg-card/40 border border-border/60 rounded-lg backdrop-blur">
+        <div className="flex items-center gap-1 p-1 bg-zinc-950 border border-zinc-800 rounded-none backdrop-blur">
           {(['ALL', 'OPEN', 'INVESTIGATING', 'RESOLVED'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => handleTabChange(tab)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+              className={`px-3 py-1.5 rounded-none text-xs font-mono transition-all ${
                 activeTab === tab
-                  ? 'bg-purple-600 text-white shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-white text-black font-semibold'
+                  : 'text-zinc-400 hover:text-zinc-200'
               }`}
             >
-              {tab.charAt(0) + tab.slice(1).toLowerCase()}
-              <span className="ml-1.5 text-[10px] font-mono opacity-80">
+              {tab}
+              <span className="ml-1.5 text-[9px] font-mono opacity-80">
                 ({initialCounts[tab] ?? 0})
               </span>
             </button>
@@ -117,12 +117,12 @@ export function IncidentListClient({
 
         {/* Search */}
         <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+          <input
             placeholder="Search service or outage..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8 text-xs bg-card/30 border-border/60"
+            className="w-full pl-8 pr-3 py-1.5 text-xs bg-zinc-950 border border-zinc-800 text-zinc-100 placeholder-zinc-500 rounded-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-700 font-mono"
           />
         </div>
       </div>
@@ -130,18 +130,18 @@ export function IncidentListClient({
       {/* Incident List */}
       <div className="space-y-3">
         {filteredIncidents.length === 0 ? (
-          <div className="p-12 text-center rounded-xl border border-dashed border-border/60 bg-card/20">
-            <AlertOctagon className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
-            <p className="text-sm font-medium text-muted-foreground">No incidents found.</p>
-            <p className="text-xs text-muted-foreground/70 mt-0.5">
-              Everything is operating normally across all services.
+          <div className="p-12 text-center rounded-none border border-dashed border-zinc-800 bg-zinc-950/40">
+            <AlertOctagon className="h-6 w-6 text-zinc-600 mx-auto mb-2" />
+            <p className="text-xs font-mono font-semibold uppercase text-zinc-300">No active incidents found</p>
+            <p className="text-xs text-zinc-500 font-sans mt-1 leading-relaxed">
+              All infrastructure layers are operating within healthy latency thresholds.
             </p>
           </div>
         ) : (
           filteredIncidents.map((incident) => (
             <Card
               key={incident.id}
-              className="border-border/60 bg-card/30 hover:bg-card/50 backdrop-blur transition-all duration-200 group"
+              className="border-zinc-800 bg-zinc-950/60 hover:bg-zinc-900/40 backdrop-blur rounded-none transition-all duration-150 group"
             >
               <CardContent className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="space-y-2 max-w-2xl">

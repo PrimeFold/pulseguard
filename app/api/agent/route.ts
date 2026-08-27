@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
           await prisma.agentExecution.create({
             data: {
               organizationId: org.id,
-              model: String(process.env.TEXT_MODEL),
+              model: org.aiModel || "gemini-1.5-flash",
               incidentId: incidentId || null,
               totalTokens: 0, // result.usage might not be synchronously available here
               fingerprint: incident?.fingerprint || "manual-query",

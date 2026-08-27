@@ -40,6 +40,7 @@ export function decryptApiKey(cipherText: string): string {
  * Supports custom API keys and provider selection with graceful fallback.
  */
 export async function getOrgLanguageModel(organizationId: string) {
+  const DEFAULT_TEXT_MODEL = "gemini-1.5-flash";
   try {
     const org: any = await (prisma.organization as any).findUnique({
       where: { id: organizationId },
@@ -51,12 +52,12 @@ export async function getOrgLanguageModel(organizationId: string) {
     });
 
     if (!org) {
-      return google(process.env.TEXT_MODEL || "gemini-1.5-flash");
+      return google(DEFAULT_TEXT_MODEL);
     }
 
     const decryptedKey = org.aiApiKeyEncrypted ? decryptApiKey(org.aiApiKeyEncrypted) : null;
     const provider = org.aiProvider?.toLowerCase() || "google";
-    const modelName = org.aiModel || "gemini-1.5-flash";
+    const modelName = org.aiModel || DEFAULT_TEXT_MODEL;
 
     if (provider === "google") {
       if (decryptedKey) {
@@ -69,7 +70,7 @@ export async function getOrgLanguageModel(organizationId: string) {
     // Fallback if custom provider client isn't installed yet or default
     return google(modelName);
   } catch {
-    return google(process.env.TEXT_MODEL || "gemini-1.5-flash");
+    return google(DEFAULT_TEXT_MODEL);
   }
 }
 
@@ -77,6 +78,7 @@ export async function getOrgLanguageModel(organizationId: string) {
  * Dynamically resolves the embedding model for an organization.
  */
 export async function getOrgEmbeddingModel(organizationId: string) {
+  const DEFAULT_EMBEDDING_MODEL = "text-embedding-004";
   try {
     const org: any = await (prisma.organization as any).findUnique({
       where: { id: organizationId },
@@ -88,7 +90,7 @@ export async function getOrgEmbeddingModel(organizationId: string) {
     });
 
     const decryptedKey = org?.aiApiKeyEncrypted ? decryptApiKey(org.aiApiKeyEncrypted) : null;
-    const embeddingModel = org?.aiEmbeddingModel || process.env.EMBEDDING_MODEL || "text-embedding-004";
+    const embeddingModel = org?.aiEmbeddingModel || DEFAULT_EMBEDDING_MODEL;
 
     if (decryptedKey) {
       const customGoogle = createGoogleGenerativeAI({ apiKey: decryptedKey });
@@ -97,6 +99,6 @@ export async function getOrgEmbeddingModel(organizationId: string) {
 
     return google.textEmbeddingModel(embeddingModel);
   } catch {
-    return google.textEmbeddingModel(process.env.EMBEDDING_MODEL || "text-embedding-004");
+    return google.textEmbeddingModel(DEFAULT_EMBEDDING_MODEL);
   }
 }

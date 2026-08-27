@@ -5,7 +5,7 @@ export async function getEmbeddingVectorString(text: string, organizationId?: st
     try {
         const model = organizationId
           ? await getOrgEmbeddingModel(organizationId)
-          : (await import("@ai-sdk/google")).google.textEmbeddingModel(process.env.EMBEDDING_MODEL || "text-embedding-004");
+          : (await import("@ai-sdk/google")).google.textEmbeddingModel("text-embedding-004");
 
         const { embedding } = await embed({
             model: model as any,

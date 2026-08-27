@@ -12,6 +12,7 @@ import {
   requireIncidentAccess,
   requireOrganizationMembership,
 } from '@/lib/authorization';
+import { getOrgLanguageModel } from "@/lib/ai/provider";
 
 export async function resolveIncidentAndEmbedRCA({
   incidentId,
@@ -119,13 +120,10 @@ async function generateRca({
   incidentId:string;
 }) {
   try {
-    const googleTextModel = process.env.TEXT_MODEL;
-    if (!googleTextModel) {
-      throw new Error("Model not found");
-    }
+    const resolvedModel = await getOrgLanguageModel(organizationId);
 
     const { output } = await generateText({
-      model: google(googleTextModel),
+      model: resolvedModel as any,
       prompt: `
             You're an expert at analysing errors , issues , exceptions on frontend & backend systems of a web-application.
             An 'incident' is the information about the issues that happened in the application in a particular organistion ( team ).
