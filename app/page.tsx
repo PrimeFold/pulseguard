@@ -9,9 +9,7 @@ import {
 import { FaGithub } from "react-icons/fa6";
 import { AnimatedHeroTerminal } from "@/components/landing/AnimatedHeroTerminal";
 import { AnimatedBentoCards } from "@/components/landing/AnimatedBentoCards";
-import dynamic from "next/dynamic";
-
-const AcidSquares = dynamic(() => import("@/components/AcidSquares"), { ssr: false });
+import { LandingBackground } from "@/components/landing/LandingBackground";
 
 export default function LandingPage() {
   return (
@@ -85,30 +83,7 @@ export default function LandingPage() {
       <section className="relative border-b border-zinc-800 py-12 md:py-16 overflow-hidden">
         {/* Background AcidSquares */}
         <div className="absolute inset-0 z-0 opacity-40">
-          <AcidSquares
-            color1="#000000"
-            color2="#b8b8b8"
-            color3="#888888"
-            detail="medium"
-            speed={0.7}
-            waveDepth={0.6}
-            zoom={1.35}
-            density={8.5}
-            glow={0.75}
-            exposure={2350}
-            spread={0.3}
-            stepSize={0.002}
-            colorShift={0}
-            contrast={1}
-            brightness={1}
-            opacity={0.6}
-            mouseInteraction
-            mouseStrength={0.1}
-            mouseRadius={0.39}
-            blur={0}
-            grain
-            grainIntensity={0.1}
-          />
+          <LandingBackground />
         </div>
 
         <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-6">
