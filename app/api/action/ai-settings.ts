@@ -91,15 +91,34 @@ export async function removeCustomAiKey(organizationId: string) {
 }
 
 /**
- * Fetches the live, up-to-date list of models directly from the provider's API.
+ * Fetches the live, up-to-date list of models directly from the provider's API with Redis caching.
  */
 export async function fetchLiveProviderModels(params: {
   provider: string;
   apiKey?: string;
   organizationId?: string;
+  forceRefresh?: boolean;
 }): Promise<{ textModels: string[]; embeddingModels: string[]; source: "live_api" | "fallback" }> {
-  const { provider, organizationId } = params;
+  const { provider, organizationId, forceRefresh } = params;
+  const p = provider.toLowerCase();
   let resolvedKey = params.apiKey?.trim();
+
+  // Cache key per organization (or global fallback if no key)
+  const cacheKey = organizationId && resolvedKey
+    ? `models:cache:${organizationId}:${p}`
+    : `models:cache:global:${p}`;
+
+  // 1. Check Redis Cache first unless forceRefresh is requested
+  if (!forceRefresh) {
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch {
+      // Continue to live API on Redis error
+    }
+  }
 
   // If no key passed directly, attempt to read the organization's stored key
   if ((!resolvedKey || resolvedKey.includes("...")) && organizationId) {
@@ -112,8 +131,6 @@ export async function fetchLiveProviderModels(params: {
       resolvedKey = decryptApiKey(org.aiApiKeyEncrypted);
     }
   }
-
-  const p = provider.toLowerCase();
 
   try {
     // 1. Google Gemini Live API
@@ -137,11 +154,13 @@ export async function fetchLiveProviderModels(params: {
             .map((m) => m.name.replace("models/", ""));
 
           if (textModels.length > 0) {
-            return {
+            const result = {
               textModels,
               embeddingModels: embeddingModels.length > 0 ? embeddingModels : ["text-embedding-004", "embedding-001"],
-              source: "live_api",
+              source: "live_api" as const,
             };
+            await redis.setex(cacheKey, 86400, JSON.stringify(result)).catch(() => {});
+            return result;
           }
         }
       }
@@ -169,11 +188,13 @@ export async function fetchLiveProviderModels(params: {
             .sort();
 
           if (textModels.length > 0) {
-            return {
+            const result = {
               textModels,
               embeddingModels: embeddingModels.length > 0 ? embeddingModels : ["text-embedding-3-small", "text-embedding-3-large"],
-              source: "live_api",
+              source: "live_api" as const,
             };
+            await redis.setex(cacheKey, 86400, JSON.stringify(result)).catch(() => {});
+            return result;
           }
         }
       }
@@ -195,11 +216,13 @@ export async function fetchLiveProviderModels(params: {
           const models: any[] = data.data || [];
           const textModels = models.map((m) => m.id).sort((a, b) => b.localeCompare(a));
           if (textModels.length > 0) {
-            return {
+            const result = {
               textModels,
               embeddingModels: ["text-embedding-004"],
-              source: "live_api",
+              source: "live_api" as const,
             };
+            await redis.setex(cacheKey, 86400, JSON.stringify(result)).catch(() => {});
+            return result;
           }
         }
       }
@@ -218,11 +241,13 @@ export async function fetchLiveProviderModels(params: {
           const models: any[] = data.data || [];
           const textModels = models.map((m) => m.id).sort((a, b) => b.localeCompare(a));
           if (textModels.length > 0) {
-            return {
+            const result = {
               textModels,
               embeddingModels: ["text-embedding-004"],
-              source: "live_api",
+              source: "live_api" as const,
             };
+            await redis.setex(cacheKey, 86400, JSON.stringify(result)).catch(() => {});
+            return result;
           }
         }
       }
@@ -237,11 +262,13 @@ export async function fetchLiveProviderModels(params: {
         const data = await res.json();
         const models: any[] = data.data || [];
         const textModels = models.map((m) => m.id).slice(0, 50);
-        return {
+        const result = {
           textModels,
           embeddingModels: ["text-embedding-004"],
-          source: "live_api",
+          source: "live_api" as const,
         };
+        await redis.setex(cacheKey, 86400, JSON.stringify(result)).catch(() => {});
+        return result;
       }
     }
   } catch (error) {
@@ -273,10 +300,12 @@ export async function fetchLiveProviderModels(params: {
   };
 
   const selected = fallbacks[p] || fallbacks.google;
-  return {
+  const fallbackResult = {
     textModels: selected.text,
     embeddingModels: selected.embed,
-    source: "fallback",
+    source: "fallback" as const,
   };
+  await redis.setex(cacheKey, 3600, JSON.stringify(fallbackResult)).catch(() => {});
+  return fallbackResult;
 }
 

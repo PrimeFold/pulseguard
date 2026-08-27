@@ -51,14 +51,15 @@ export function AiProviderCard({
   const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Load models dynamically from provider APIs
-  const loadModels = async (selectedProvider: string, userKey?: string) => {
+  // Load models dynamically from provider APIs (uses Redis cache automatically)
+  const loadModels = async (selectedProvider: string, userKey?: string, forceRefresh = false) => {
     setFetchingModels(true);
     try {
       const res = await fetchLiveProviderModels({
         provider: selectedProvider,
         apiKey: userKey || apiKey || undefined,
         organizationId,
+        forceRefresh,
       });
 
       setAvailableModels(res.textModels);
@@ -198,11 +199,11 @@ export function AiProviderCard({
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => loadModels(provider)}
+                    onClick={() => loadModels(provider, undefined, true)}
                     disabled={fetchingModels}
                     className="text-[11px] text-muted-foreground hover:text-white flex items-center gap-1 transition-colors"
                   >
-                    <RefreshCw className={`h-3 w-3 ${fetchingModels ? "animate-spin" : ""}`} /> Refresh Models
+                    <RefreshCw className={`h-3 w-3 ${fetchingModels ? "animate-spin" : ""}`} /> Refresh Live Models
                   </button>
                   <span className="text-zinc-700">|</span>
                   <button
