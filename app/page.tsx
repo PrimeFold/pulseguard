@@ -9,6 +9,9 @@ import {
 import { FaGithub } from "react-icons/fa6";
 import { AnimatedHeroTerminal } from "@/components/landing/AnimatedHeroTerminal";
 import { AnimatedBentoCards } from "@/components/landing/AnimatedBentoCards";
+import dynamic from "next/dynamic";
+
+const AcidSquares = dynamic(() => import("@/components/AcidSquares"), { ssr: false });
 
 export default function LandingPage() {
   return (
@@ -80,10 +83,35 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="relative border-b border-zinc-800 py-12 md:py-16 overflow-hidden">
-        {/* Background Grid Pattern */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#18181b_1px,transparent_1px),linear-gradient(to_bottom,#18181b_1px,transparent_1px)] bg-[size:3rem_3rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-25 pointer-events-none" />
+        {/* Background AcidSquares */}
+        <div className="absolute inset-0 z-0 opacity-40">
+          <AcidSquares
+            color1="#000000"
+            color2="#b8b8b8"
+            color3="#888888"
+            detail="medium"
+            speed={0.7}
+            waveDepth={0.6}
+            zoom={1.35}
+            density={8.5}
+            glow={0.75}
+            exposure={2350}
+            spread={0.3}
+            stepSize={0.002}
+            colorShift={0}
+            contrast={1}
+            brightness={1}
+            opacity={0.6}
+            mouseInteraction
+            mouseStrength={0.1}
+            mouseRadius={0.39}
+            blur={0}
+            grain
+            grainIntensity={0.1}
+          />
+        </div>
 
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-6">
+        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-6">
           <div className="inline-flex items-center gap-1.5 border border-zinc-800 bg-zinc-950 px-2.5 py-0.5 text-[10px] font-mono text-zinc-400 rounded-none">
             <span className="h-1.5 w-1.5 bg-red-500 rounded-none animate-ping" />
             <span className="text-zinc-300">AUTONOMOUS SRE INCIDENT RESPONSE</span>
