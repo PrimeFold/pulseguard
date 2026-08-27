@@ -9,11 +9,17 @@ import { google } from "@ai-sdk/google";
 
 import { prisma } from "@/lib/auth";
 import { createIncidentTools } from "@/lib/ai/tools";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { NextRequest } from "next/server";
 
 export const maxDuration = 60;
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
+    const rateLimit = checkRateLimit(req);
+    if (!rateLimit.success) {
+      return new Response(JSON.stringify({ error: "Too many requests" }), { status: 429 });
+    }
     const { messages, organizationId, incidentId } = await req.json();
     const TEXT_MODEL = process.env.TEXT_MODEL;
     if (!TEXT_MODEL) {
@@ -96,7 +102,8 @@ export async function POST(req: Request) {
               organizationId: org.id,
               model: String(process.env.TEXT_MODEL),
               incidentId: incidentId || null,
-              totalTokens: Number(result.usage),
+              totalTokens: 0, // result.usage might not be synchronously available here
+              fingerprint: incident?.fingerprint || "manual-query",
             },
           });
         },

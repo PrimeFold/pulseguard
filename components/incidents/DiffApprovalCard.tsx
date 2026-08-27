@@ -59,7 +59,7 @@ export function DiffApprovalCard({
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border/40 pb-2">
         <div className="flex items-center gap-2">
-          <ShieldCheck className="h-4 w-4 text-purple-400" />
+          <ShieldCheck className="h-4 w-4 text-zinc-100" />
           <span className="font-semibold text-zinc-100">Proposed Remediation Patch</span>
         </div>
         <span className="font-mono text-[11px] text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">
@@ -101,7 +101,7 @@ export function DiffApprovalCard({
             size="sm"
             onClick={handleApprove}
             disabled={status === 'submitting'}
-            className="gap-1.5 bg-purple-600 hover:bg-purple-500 text-white"
+            className="gap-1.5 bg-white hover:bg-zinc-200 text-black border border-transparent font-medium"
           >
             {status === 'submitting' ? (
               <>

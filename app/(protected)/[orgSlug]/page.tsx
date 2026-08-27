@@ -73,7 +73,7 @@ export default async function OrgOverviewPage({ params }: OverviewPageProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-zinc-100 flex items-center gap-2">
-            <Activity className="h-5 w-5 text-purple-400" /> SRE Cluster Overview
+            <Activity className="h-5 w-5 text-zinc-100" /> SRE Cluster Overview
           </h1>
           <p className="text-xs text-zinc-400 mt-0.5">
             Real-time health indicators and telemetry streams for <span className="text-zinc-200 font-medium">{org.name}</span>.
@@ -120,7 +120,7 @@ export default async function OrgOverviewPage({ params }: OverviewPageProps) {
         <Card className="bg-zinc-950/60 border-zinc-800 text-zinc-100">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-medium text-zinc-400">Mean Time to Resolve (MTTR)</CardTitle>
-            <Clock className="h-4 w-4 text-purple-400" />
+            <Clock className="h-4 w-4 text-zinc-100" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold font-mono">3.8m</div>
@@ -149,12 +149,12 @@ export default async function OrgOverviewPage({ params }: OverviewPageProps) {
 
       {/* Recent Incidents Feed */}
       <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 backdrop-blur overflow-hidden">
-        <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
+        <div className="p-4 border-b border-border flex items-center justify-between">
           <div>
             <h2 className="text-sm font-semibold text-zinc-100">Recent Incidents & War Rooms</h2>
-            <p className="text-xs text-zinc-400">Direct links to root-cause diagnoses and automated PR hotfixes</p>
+            <p className="text-xs text-muted-foreground">Direct links to root-cause diagnoses and automated PR hotfixes</p>
           </div>
-          <Button asChild variant="ghost" size="sm" className="text-xs text-purple-400 hover:text-purple-300">
+          <Button asChild variant="ghost" size="sm" className="text-xs text-zinc-100 hover:text-white">
             <Link href={`/${org.slug}/incidents`}>
               View All <ArrowRight className="h-3 w-3 ml-1" />
             </Link>
@@ -185,7 +185,7 @@ export default async function OrgOverviewPage({ params }: OverviewPageProps) {
                     >
                       {incident.status}
                     </Badge>
-                    <span className="text-xs font-semibold text-zinc-200 group-hover:text-purple-300 transition-colors">
+                    <span className="text-xs font-semibold text-zinc-200 group-hover:text-white transition-colors">
                       {incident.title}
                     </span>
                   </div>

@@ -14,16 +14,5 @@ export default async function DashboardLayout({
     redirect('/login');
   }
 
-  // 2. Rendering authenticated shell with user data..
-  return (
-    <DashboardShell
-      user={{
-        name: user.name || 'Developer',
-        email: user.email,
-        initials: (user.name || user.email || 'U').slice(0, 2).toUpperCase(),
-      }}
-    >
-      {children}
-    </DashboardShell>
-  );
+  return <>{children}</>;
 }

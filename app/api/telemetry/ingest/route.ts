@@ -1,12 +1,32 @@
 import { prisma } from "@/lib/auth";
 import { generateErrorFingerprint } from "@/lib/telemetry";
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { z } from "zod";
 
 const ANOMALY_WINDOW_MINUTES = 3;
 const ERROR_THRESHOLD = 3;
 
+const logSchema = z.object({
+  level: z.string().optional(),
+  severity: z.string().optional(),
+  message: z.string().optional(),
+  msg: z.string().optional(),
+  service: z.string().optional(),
+  source: z.string().optional(),
+  timestamp: z.string().or(z.date()).or(z.number()).optional(),
+  metadata: z.record(z.any()).optional().default({}),
+});
+
+const payloadSchema = z.union([logSchema, z.array(logSchema)]);
+
 export async function POST(req: NextRequest) {
   try {
+    const rateLimit = checkRateLimit(req);
+    if (!rateLimit.success) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+
     const authHeader = req.headers.get("authorization");
     const xApiKey = req.headers.get("x-api-key");
     const searchParams = req.nextUrl.searchParams;
@@ -28,7 +48,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid API Key" }, { status: 403 });
     }
 
-    const body = await req.json();
+    const rawBody = await req.json();
+    const body = payloadSchema.parse(rawBody);
     const rawLogs = Array.isArray(body) ? body : [body];
 
     const processedLogs = rawLogs.map((log: any) => {

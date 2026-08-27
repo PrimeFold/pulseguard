@@ -22,19 +22,19 @@ export function OrgSidebar({ org, userRole }: { org: any; userRole: string; user
   ];
 
   return (
-    <aside className="w-64 border-r border-zinc-800 bg-zinc-950 flex flex-col justify-between shrink-0">
+    <aside className="w-64 border-r border-border bg-[#0a0a0a] flex flex-col justify-between shrink-0">
       <div className="p-4 space-y-6">
         {/* Workspace Switcher Header */}
         <div className="space-y-1">
           <Link
             href="/workspaces"
-            className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 transition-colors group"
+            className="flex items-center justify-between p-2 rounded-lg bg-black border border-border hover:bg-zinc-950 transition-colors group"
           >
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-zinc-100 truncate">{org.name}</p>
-              <p className="text-[10px] font-mono text-zinc-500">/{org.slug}</p>
+              <p className="text-sm font-medium text-white truncate">{org.name}</p>
+              <p className="text-xs text-muted-foreground">/{org.slug}</p>
             </div>
-            <ArrowLeftRight className="h-3.5 w-3.5 text-zinc-500 group-hover:text-purple-400 shrink-0" />
+            <ArrowLeftRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-white shrink-0 transition-colors" />
           </Link>
         </div>
 
@@ -50,10 +50,10 @@ export function OrgSidebar({ org, userRole }: { org: any; userRole: string; user
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'flex items-center gap-2.5 px-3 py-2 rounded-md text-xs font-medium transition-colors',
+                  'flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors',
                   isActive
-                    ? 'bg-purple-600/10 text-purple-400 border border-purple-500/20'
-                    : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'
+                    ? 'bg-zinc-900 text-white font-medium'
+                    : 'text-muted-foreground hover:bg-zinc-950 hover:text-white'
                 )}
               >
                 <item.icon className="h-4 w-4" />
@@ -64,8 +64,8 @@ export function OrgSidebar({ org, userRole }: { org: any; userRole: string; user
         </nav>
       </div>
 
-      <div className="p-4 border-t border-zinc-900">
-        <div className="flex items-center gap-2 text-[11px] text-zinc-500">
+      <div className="p-4 border-t border-border">
+        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
           <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
           <span>SRE Agent Running</span>
         </div>

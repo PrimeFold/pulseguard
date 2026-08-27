@@ -1,122 +1,85 @@
-# PulseGuard
+# PulseGuard 🚨
 
-PulseGuard is an AI-assisted incident-response workspace for small engineering teams. It brings incident records, structured telemetry, internal runbooks, and repository context into one place so an operator can investigate an issue and review a proposed fix.
+**PulseGuard** is an AI-assisted incident-response workspace designed for modern engineering teams. It unites your telemetry, runbooks, and codebase into a single AI-powered War Room, allowing autonomous agents to help you investigate and resolve production incidents at lightning speed.
 
-> This project is actively being built. The goal is a secure, understandable V1 before adding more agent capabilities.
+---
 
-## What It Does
+## ⚡ What It Does (For Users)
 
-- Authenticates users and scopes data to an organization.
-- Stores incidents and telemetry logs in PostgreSQL.
-- Ingests documents, splits them into chunks, embeds them, and supports semantic knowledge-base search with pgvector.
-- Generates a root-cause analysis for a newly created incident and stores it as a searchable post-mortem.
-- Connects a GitHub App installation to an organization, allowing the agent to read repository files and propose a hotfix.
-- Streams a tool-calling SRE chat experience using the AI SDK and Gemini.
-- Requires a human `OWNER` or `ADMIN` before a proposed GitHub pull request can be created.
+When production breaks, you shouldn't have to scramble between 5 different tools. PulseGuard brings it all together:
+- **Centralized Telemetry:** Automatically groups repetitive error logs into actionable "Incidents".
+- **AI War Rooms:** Chat with an autonomous SRE agent (powered by Gemini) that can query your error logs for you.
+- **Repository Context:** The AI reads your GitHub repository code to understand *why* the stack trace failed.
+- **Hotfix Proposals:** The AI drafts a PR to fix the issue. You (the human) click "Approve", and it's sent to GitHub.
+- **Secure Workspaces:** Everything is scoped to your Organization, meaning strict Role-Based Access Control (RBAC).
 
-## Architecture
+---
 
+## 🛠️ How It Works (For Developers)
+
+PulseGuard is built on a modern, high-performance stack:
+
+- **Frontend:** Next.js 16 (App Router), React 19, Tailwind CSS (Vercel-style Dark Mode)
+- **Backend:** Node.js, Next.js Server Actions
+- **Database:** PostgreSQL with `pgvector` for semantic search, accessed via Prisma ORM 7
+- **Authentication:** Better Auth (handling organizations and invites)
+- **AI Integration:** Vercel AI SDK + Google Gemini 3.5 Flash
+- **GitHub Integration:** Octokit & GitHub Apps for reading repos and pushing patches
+
+### The AI & RAG Pipeline
 ```text
-Browser
-  -> Next.js app and server actions
-  -> Better Auth session + organization membership check
-  -> PostgreSQL / Prisma
-       -> incidents and telemetry
-       -> documents and pgvector embeddings
-  -> AI SDK + Gemini
-       -> SRE tools: query logs, read repository file, propose hotfix
-  -> GitHub App installation
-       -> repository reads and approved pull requests
+Document -> Chunking (600 chars) -> Gemini Embeddings -> pgvector -> Semantic Search
+```
+When an incident occurs, the agent is provided tools (`query_telemetry_logs`, `fetch_repo_file`, `propose_hotfix`). It uses a React Server Component stream (`useChat` from Vercel AI SDK) to execute these tools in real-time, streaming the intermediate steps to the client. 
+
+### Telemetry Ingestion Flow
+Error logs are sent to the `/api/telemetry/ingest` endpoint.
+1. **Validation:** Zod validates the incoming payload.
+2. **Rate Limiting:** Protects the database from log spam.
+3. **Fingerprinting:** Groups identical stack traces.
+4. **Threshold Trigger:** If an error occurs > 3 times in 3 minutes, it creates an `Incident`.
+
+---
+
+## 🚀 Local Setup
+
+### 1. Prerequisites
+- [Bun](https://bun.sh/) (Package Manager)
+- A running PostgreSQL database (with `vector` extension installed)
+
+### 2. Environment Variables
+Create a `.env.local` file at the root:
+
+```env
+DATABASE_URL="postgresql://user:pass@localhost:5432/pulseguard"
+BETTER_AUTH_URL="http://localhost:3000"
+TEXT_MODEL="gemini-3.5-flash"
+EMBEDDING_MODEL="text-embedding-004"
+GITHUB_APP_ID="your_app_id"
+GITHUB_APP_PRIVATE_KEY="your_private_key"
+NEXT_PUBLIC_GITHUB_APP_SLUG="your_app_slug"
 ```
 
-Every browser-initiated operation must be both authenticated and authorized for the target organization. Machine-to-machine telemetry ingestion uses a per-organization API key instead of a browser session.
-
-## Stack
-
-- Next.js 16, React 19, TypeScript, Tailwind CSS
-- PostgreSQL, Prisma 7, pgvector
-- Better Auth
-- Vercel AI SDK and Google Gemini
-- LangChain text splitters
-- GitHub App, Octokit
-- Zod
-
-## Local Setup
-
-1. Install dependencies with your chosen package manager. The repository uses Bun, although an npm lockfile is also present.
-2. Create a PostgreSQL database with the `vector` extension available.
-3. Create `.env.local` with the required values:
-
+### 3. Install & Start
 ```bash
-DATABASE_URL=
-BETTER_AUTH_URL=http://localhost:3000
-TEXT_MODEL=
-EMBEDDING_MODEL=
-GITHUB_APP_ID=
-GITHUB_APP_PRIVATE_KEY=
-NEXT_PUBLIC_GITHUB_APP_SLUG=
-```
-
-4. Apply the Prisma migrations and generate the client.
-5. Start the development server:
-
-```bash
+bun install
+bunx prisma db push
 bun run dev
 ```
 
-## AI And Retrieval Flow
+### 4. Running the Tests
+*Test suite commands pending implementation.*
 
-```text
-Document
-  -> text extraction
-  -> chunking (600 characters, 60-character overlap)
-  -> Gemini embeddings
-  -> pgvector storage
+---
 
-Question
-  -> query embedding
-  -> organization-scoped similarity search
-  -> relevant chunks supplied as context to an AI workflow
-```
+## 🔒 Security & Safeguards
+- **Human-in-the-Loop:** The AI **cannot** execute write operations (like creating PRs) without an explicit `OWNER` or `ADMIN` approval.
+- **Strict Authorization:** Server actions verify session boundaries before exposing telemetry.
+- **Rate Limiting:** Core AI routes and ingestion points are protected by memory-based rate limiters (easily swappable for Redis).
 
-The embedding model and database vector dimension are an important contract: they must stay aligned before production use.
+---
 
-## GitHub App Flow
-
-1. An `OWNER` or `ADMIN` starts a GitHub App installation for their organization.
-2. PulseGuard stores the installation ID and selected repository metadata on that organization.
-3. An incident agent can use the installation token to inspect repository files.
-4. The agent proposes a fix first.
-5. An `OWNER` or `ADMIN` explicitly approves creation of a pull request.
-
-## Current Scope And Roadmap
-
-### V1
-
-- Complete organization selection rather than using placeholder organization IDs in dashboard pages.
-- Persist and validate telemetry event payloads at the API-key ingestion endpoint.
-- Finish incident detail and chat UI.
-- Add automated authorization, retrieval, and GitHub approval tests.
-- Add operational safeguards: rate limits, audit records, error handling, and a consistent embedding configuration.
-
-### V2
-
-- Let organizations choose and configure their own AI model providers.
-- Add Vercel Drain as an optional telemetry source for Vercel-hosted applications.
-- Add additional collectors or OpenTelemetry-compatible ingestion for applications hosted outside Vercel.
-- Add richer retrieval evaluation and incident timelines.
-
-## Telemetry Sources
-
-Vercel Drain should be an optional V2 integration, not the foundation of telemetry. It only covers workloads whose logs are available through Vercel. A general API-key-protected ingestion endpoint can accept logs from any hosting provider, container platform, or custom service, making it the right V1 path.
-
-## Security Model
-
-- Server actions verify a session and organization membership before reading or changing organization data.
-- GitHub connection and pull-request creation require `OWNER` or `ADMIN` membership.
-- Semantic search joins document chunks back to their organization before returning results.
-- Telemetry API keys are stored as hashes; only a display-safe fragment is retained after generation.
-
-## License
-
-No license has been selected yet.
+## 🗺️ Roadmap (V2)
+- **Custom AI Models:** Bring-your-own API keys for Claude 3.5 Sonnet or GPT-4o.
+- **Vercel Drain Integration:** First-party Vercel log ingestion.
+- **Automated Root-Cause Post-mortems:** Generate and save a markdown summary of every resolved incident.
