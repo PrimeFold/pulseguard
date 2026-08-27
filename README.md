@@ -82,6 +82,13 @@ bunx prisma generate
 bun run dev
 ```
 
+### 4. Run the Test Suite
+We use **Vitest** for running backend unit and integration test coverage (including log fingerprinting, BYOM providers, invite flows, RBAC checks, and mocked Octokit git operations):
+```bash
+# Run test suite
+bun run test
+```
+
 ---
 
 ## 🔒 Security & Multi-Tenant Isolation (RBAC)
