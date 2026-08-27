@@ -15,6 +15,7 @@ import {
   Terminal 
 } from 'lucide-react';
 import { prisma } from '@/lib/auth';
+import { redis } from '@/lib/redis';
 
 interface OverviewPageProps {
   params: Promise<{ orgSlug: string }>;
@@ -24,27 +25,40 @@ export default async function OrgOverviewPage({ params }: OverviewPageProps) {
   const { orgSlug } = await params;
   const { org } = await getOrganizationAndMembership(orgSlug);
 
-  // 1. Fetch Metrics & Active Incidents in parallel
-  const [openIncidents, totalResolved, recentLogs, recentIncidents] = await Promise.all([
-    prisma.incident.findMany({
-      where: { organizationId: org.id, status: 'TRIGGERED' },
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-    }),
-    prisma.incident.count({
-      where: { organizationId: org.id, status: 'RESOLVED' },
-    }),
-    prisma.telemetryLog.findMany({
-      where: { organizationId: org.id },
-      orderBy: { timestamp: 'desc' },
-      take: 100,
-    }),
-    prisma.incident.findMany({
-      where: { organizationId: org.id },
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-    }),
-  ]);
+  const cacheKey = `dashboard:${org.id}`;
+  let dashboardDataStr = await redis.get(cacheKey);
+  let dashboardData;
+
+  if (dashboardDataStr) {
+    dashboardData = JSON.parse(dashboardDataStr);
+  } else {
+    // 1. Fetch Metrics & Active Incidents in parallel
+    const [openIncidents, totalResolved, recentLogs, recentIncidents] = await Promise.all([
+      prisma.incident.findMany({
+        where: { organizationId: org.id, status: 'TRIGGERED' },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      }),
+      prisma.incident.count({
+        where: { organizationId: org.id, status: 'RESOLVED' },
+      }),
+      prisma.telemetryLog.findMany({
+        where: { organizationId: org.id },
+        orderBy: { timestamp: 'desc' },
+        take: 100,
+      }),
+      prisma.incident.findMany({
+        where: { organizationId: org.id },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      }),
+    ]);
+
+    dashboardData = { openIncidents, totalResolved, recentLogs, recentIncidents };
+    await redis.setex(cacheKey, 60, JSON.stringify(dashboardData)); // Cache for 1 min
+  }
+
+  const { openIncidents, totalResolved, recentLogs, recentIncidents } = dashboardData;
 
   // 2. Aggregate telemetry data into 6 dynamic hourly buckets for the Shadcn chart
   const now = Date.now();

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/auth";
 import { generateErrorFingerprint } from "@/lib/telemetry";
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { redis } from "@/lib/redis";
 import { z } from "zod";
 
 const ANOMALY_WINDOW_MINUTES = 3;
@@ -22,7 +23,7 @@ const payloadSchema = z.union([logSchema, z.array(logSchema)]);
 
 export async function POST(req: NextRequest) {
   try {
-    const rateLimit = checkRateLimit(req);
+    const rateLimit = await checkRateLimit(req);
     if (!rateLimit.success) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
@@ -97,15 +98,26 @@ export async function POST(req: NextRequest) {
 
     for (const [fingerprint, logs] of errorGroups.entries()) {
       const sample = logs[0];
+      const cacheKey = `incident:${org.id}:${fingerprint}`;
 
       // Check if an open incident already tracks this specific error signature
-      let incident = await prisma.incident.findFirst({
-        where: {
-          organizationId: org.id,
-          fingerprint,
-          status: "TRIGGERED",
-        },
-      });
+      let incidentId = await redis.get(cacheKey);
+      let incident = incidentId ? { id: incidentId } : null;
+
+      if (!incident) {
+        incident = await prisma.incident.findFirst({
+          where: {
+            organizationId: org.id,
+            fingerprint,
+            status: "TRIGGERED",
+          },
+          select: { id: true }
+        });
+
+        if (incident) {
+          await redis.setex(cacheKey, 300, incident.id); // Cache for 5 mins
+        }
+      }
 
       if (!incident) {
         // Count previous occurrences of this fingerprint within the window
@@ -130,7 +142,9 @@ export async function POST(req: NextRequest) {
               status: "TRIGGERED",
               errorPayload: sample.metadata || { message: sample.message },
             },
+            select: { id: true }
           });
+          await redis.setex(cacheKey, 300, incident.id);
         }
       }
 

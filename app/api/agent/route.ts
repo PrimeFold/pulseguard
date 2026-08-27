@@ -16,7 +16,7 @@ export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
-    const rateLimit = checkRateLimit(req);
+    const rateLimit = await checkRateLimit(req);
     if (!rateLimit.success) {
       return new Response(JSON.stringify({ error: "Too many requests" }), { status: 429 });
     }
