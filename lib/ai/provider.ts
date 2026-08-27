@@ -41,7 +41,7 @@ export function decryptApiKey(cipherText: string): string {
  */
 export async function getOrgLanguageModel(organizationId: string) {
   try {
-    const org = await prisma.organization.findUnique({
+    const org: any = await (prisma.organization as any).findUnique({
       where: { id: organizationId },
       select: {
         aiProvider: true,
@@ -78,7 +78,7 @@ export async function getOrgLanguageModel(organizationId: string) {
  */
 export async function getOrgEmbeddingModel(organizationId: string) {
   try {
-    const org = await prisma.organization.findUnique({
+    const org: any = await (prisma.organization as any).findUnique({
       where: { id: organizationId },
       select: {
         aiProvider: true,

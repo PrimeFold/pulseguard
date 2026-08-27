@@ -38,10 +38,10 @@ export default async function AiSettingsPage({ params }: Props) {
 
       <AiProviderCard
         organizationId={org.id}
-        initialProvider={org.aiProvider || "google"}
-        initialModel={org.aiModel || "gemini-1.5-flash"}
-        initialEmbeddingModel={org.aiEmbeddingModel || "text-embedding-004"}
-        initialApiKeyDisplay={org.aiApiKeyDisplay || null}
+        initialProvider={(org as any).aiProvider || "google"}
+        initialModel={(org as any).aiModel || "gemini-1.5-flash"}
+        initialEmbeddingModel={(org as any).aiEmbeddingModel || "text-embedding-004"}
+        initialApiKeyDisplay={(org as any).aiApiKeyDisplay || null}
         canManage={canManage}
       />
     </div>
