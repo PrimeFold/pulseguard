@@ -35,51 +35,67 @@ export function UserProfileForm({ user }: { user: { id: string; name: string; em
   };
 
   return (
-    <Card className="bg-black border-border shadow-none">
-      <CardHeader>
+    <Card className="bg-zinc-950/60 border border-zinc-800 rounded-none shadow-none">
+      <CardHeader className="pb-4 px-6 pt-6">
         <div className="flex items-center gap-2">
-          <User className="h-5 w-5 text-zinc-100" />
-          <CardTitle className="text-zinc-100">Your Profile</CardTitle>
+          <User className="h-4 w-4 text-zinc-400" />
+          <CardTitle className="text-sm font-semibold font-mono uppercase tracking-wider text-white">
+            User Settings
+          </CardTitle>
         </div>
-        <CardDescription className="text-muted-foreground">
-          Update your personal account settings.
+        <CardDescription className="text-xs text-zinc-500 font-sans">
+          Manage your personal console credentials and profile name.
         </CardDescription>
       </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <CardContent className="px-6 pb-4 space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-300">Email Address</label>
+            <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+              Email Address
+            </label>
             <Input
               value={user.email}
               disabled
-              className="bg-zinc-950 border-border text-muted-foreground cursor-not-allowed"
+              className="bg-zinc-900 border-zinc-800 text-zinc-500 cursor-not-allowed text-xs rounded-none h-8 font-sans"
             />
-            <p className="text-[11px] text-muted-foreground">Email cannot be changed directly.</p>
+            <p className="text-[10px] text-zinc-600 font-sans leading-relaxed">
+              Email changes are locked under tenant security rules.
+            </p>
           </div>
+
           <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-300">Display Name</label>
+            <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+              Display Name
+            </label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter your name"
-              className="bg-zinc-950 border-border text-white focus-visible:ring-1 focus-visible:ring-zinc-700"
+              className="bg-zinc-900 border-zinc-800 text-zinc-100 text-xs rounded-none h-8 font-sans focus-visible:ring-1 focus-visible:ring-zinc-700"
               required
             />
           </div>
+
           {message && (
-            <p className={`text-xs font-medium ${message.type === "success" ? "text-emerald-500" : "text-red-500"}`}>
+            <div className={`p-2 border font-mono text-[10px] uppercase rounded-none ${
+              message.type === "success" 
+                ? "bg-emerald-950/20 border-emerald-900/40 text-emerald-400" 
+                : "bg-red-950/20 border-red-900/40 text-red-400"
+            }`}>
               {message.text}
-            </p>
+            </div>
           )}
         </CardContent>
-        <CardFooter className="border-t border-border pt-4">
+
+        <CardFooter className="border-t border-zinc-900 px-6 py-4 bg-zinc-950/40">
           <Button
             type="submit"
             disabled={loading || name === user.name}
-            className="bg-white hover:bg-zinc-200 text-black border border-transparent font-medium text-sm"
+            className="bg-white hover:bg-zinc-200 text-black border border-transparent font-mono text-[10px] font-semibold tracking-wider rounded-none h-8 px-4 transition-all duration-300 active:scale-[0.98] cursor-pointer"
           >
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Changes
+            {loading && <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />}
+            SAVE CHANGES
           </Button>
         </CardFooter>
       </form>
