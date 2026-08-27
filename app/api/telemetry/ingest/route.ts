@@ -162,6 +162,14 @@ export async function POST(req: NextRequest) {
       data: processedLogs.map(({ cleanPattern, ...log }) => log),
     });
 
+    // 4. Asynchronously prune logs older than 7 days to enforce auto-TTL without blocking response
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    prisma.telemetryLog.deleteMany({
+      where: {
+        timestamp: { lt: sevenDaysAgo }
+      }
+    }).catch((err: any) => console.error("Telemetry pruning failed:", err));
+
     return NextResponse.json({
       success: true,
       ingested: processedLogs.length,
