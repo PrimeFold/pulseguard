@@ -1,104 +1,153 @@
-# 🚨 PulseGuard: Autonomous SRE Incident Response Engine
+# PulseGuard
 
-PulseGuard is an AI-assisted, multi-tenant incident response workspace. It unites microservice telemetry logs, operational runbooks, and GitHub codebases into real-time collaborative War Rooms. When production breaks, autonomous agents isolate the root cause and draft PR hotfixes for instant engineer approval.
+PulseGuard is a self-hosted, multi-tenant incident response platform. It acts as an automated SRE console that ingests raw telemetry logs, clusters related errors, consults organizational runbooks via semantic search, and deploys sandboxed AI agents to diagnose outages and submit Pull Request hotfixes.
 
 ---
 
-## ⚡ Core Functions & Architecture
+## ⚡ System Architecture
 
 ```
-[Microservice Logs] ────> [Telemetry Ingest API] ────> [SHA-256 Fingerprinting]
-                                                             │
-                                                             ▼ (Accumulate in Redis)
-[GitHub PR Created] <─── [Approve Diff] <─── [SRE Agent] <─── [Incident Cluster Triggered]
+                                  +-----------------------------+
+                                  |   Microservice Log Stream   |
+                                  +--------------+--------------+
+                                                 |
+                                                 | HTTP POST
+                                                 v
+                                  +--------------+--------------+
+                                  |   Ingest API & Rate Limit   |
+                                  +--------------+--------------+
+                                                 |
+                                                 | SHA-256 Fingerprint
+                                                 v
+                                  +--------------+--------------+
+                                  |    Redis Slide-Window Cache |
+                                  +--------------+--------------+
+                                                 |
+                                                 | Trigger (>= 3 errors / 3 mins)
+                                                 v
+                                  +--------------+--------------+
+                                  |   Incident War Room Active  |
+                                  +--------------+--------------+
+                                                 |
+                   +-----------------------------+-----------------------------+
+                   |                             |                             |
+                   v                             v                             v
+     +-------------+-------------+ +-------------+-------------+ +-------------+-------------+
+     |      pgvector RAG         | |       GitHub Context      | |     Multi-Provider AI     |
+     |  (Semantic Chunk Search)  | |  (Repo File Inspection)   | |  (Dynamic model resolver) |
+     +---------------------------+ +-------------+-------------+ +-------------+-------------+
+                                                 |
+                                                 | Propose Hotfix
+                                                 v
+                                  +--------------+--------------+
+                                  |   Human-in-the-Loop Gate    |
+                                  +--------------+--------------+
+                                                 |
+                                                 | Approve & Commit
+                                                 v
+                                  +--------------+--------------+
+                                  |    Automated Pull Request   |
+                                  +-----------------------------+
 ```
 
-### 1. High-Throughput Log Ingestion
-- **Sanitized Fingerprinting:** Sanitizes dynamic logs (stripping UUIDs, timestamps, hex keys, and IPs) to compute reproducible SHA-256 signatures in under 2ms.
-- **Sliding-Window Clustering:** If an error signature triggers $\ge 3$ times within a 3-minute window, an automated SRE War Room is provisioned.
-- **Auto-Pruning TTL:** Automatically prunes telemetry logs older than 7 days asynchronously in the background to prevent database bloat.
+---
+
+## 🛠️ Feature Modules & Core Subsystems
+
+### 1. Ingestion Engine & Log Fingerprinting
+- **Signature Extraction:** Converts high-frequency, dynamic stack traces into static signatures using regex parsing (scrubbing UUIDs, IPv4/IPv6 addresses, hex tokens, timestamps, and numbers) and hashing them using SHA-256.
+- **Sliding-Window Clustering:** Aggregates identical log signatures inside Redis. An incident War Room is triggered only when the error count passes the threshold of 3 errors in 3 minutes, shielding engineers from alert fatigue.
+- **Auto-Pruning TTL:** Automatically runs an asynchronous, non-blocking PostgreSQL clean up routine to remove logs older than 7 days, maintaining a lean database footprint.
 
 ### 2. Multi-Provider AI Engine (BYOM)
-- **Bring-Your-Own-Model:** Organizations can configure custom API keys for **Google Gemini**, **OpenAI**, **Anthropic**, **Groq**, and **OpenRouter**.
-- **Symmetric Encryption (AES-256-CBC):** API keys are encrypted at rest with random IVs and masked for UI display (`AIza...4F10`).
-- **Dynamic Model Discovery:** Models are fetched dynamically from official provider APIs and cached in Redis for 24 hours.
+- **Dynamic Decryption:** Organizations supply their own API keys for AI providers (Google, Anthropic, OpenAI, Groq, OpenRouter). Keys are encrypted at rest via symmetric AES-256-CBC and decrypted in memory.
+- **Model Discovery:** Resolves active models directly from provider endpoints, caching the options in Redis for 24 hours.
 
-### 3. pgvector Retrieval-Augmented Generation (RAG)
-- **Document Chunking:** Parses PDF and Markdown runbooks into 600-character semantic chunks with 60-character overlap.
-- **Similarity Search:** Indexes chunks using pgvector embeddings inside PostgreSQL, allowing SRE agents to retrieve diagnostic runbook context instantly.
+### 3. Runbook Knowledge Base (RAG)
+- **pgvector Indexing:** Chunks PDF and Markdown runbooks into 600-character blocks (with 60-character overlaps) and generates text embeddings.
+- **Semantic Retrieval:** Queries PostgreSQL using cosine similarity (`<=>`) to fetch runbook instructions and injects them as active context into the SRE agent's system prompt.
 
-### 4. Human-in-the-Loop Git Hotfixes
-- **Sandboxed Agent:** SRE agents operate in a read-only environment to inspect code and stack traces.
-- **One-Click Pull Requests:** When a fix is generated, the agent proposes a patch. Clicking "Approve & Open PR" triggers an automated branch creation and Pull Request commit via the Octokit GitHub App integration.
-
----
-
-## 🛠️ Technology Stack
-
-- **Frontend:** Next.js 16 (App Router), React 19, Tailwind CSS (Strict `rounded-none` Vercel theme), GSAP
-- **Database:** PostgreSQL 16 (with pgvector), Prisma ORM
-- **Caching & Rate Limiting:** Redis (`ioredis` client)
-- **Auth:** Better Auth (handling organizations, RBAC, and workspace invitations)
-- **AI Tooling:** Vercel AI SDK (`streamText`)
+### 4. Git Automation & Approvals
+- **Octokit Branch Dispatch:** Automates the creation of fix branches and commits updated files using base64 encoding.
+- **Human-in-the-Loop Security:** The AI agent operates in a read-only context. Code modifications are presented as diff cards inside the War Room chat; write operations to repository branches are blocked until an `OWNER` or `ADMIN` clicks "Approve & Open PR".
 
 ---
 
-## 🚀 Local Infrastructure Setup
+## 📁 Repository Directory Map
 
-### 1. Spin up Containers
-Ensure you have Docker installed, then boot the database and caching layers:
-```bash
-docker-compose up -d
+```
+├── app/
+│   ├── (auth)/                # Public Signup and Login
+│   ├── (protected)/           # Multi-Tenant Workspace Shell
+│   │   ├── workspaces/        # Workspace Hub (Select/Create Org & User profile settings)
+│   │   └── [orgSlug]/         # Dynamic Organization console
+│   │       ├── incidents/     # Active incident war rooms
+│   │       ├── telemetry/     # Live log explorer
+│   │       └── settings/      # Workspace members (RBAC) and AI BYOM setups
+│   └── api/                   # Telemetry ingest, agent stream, invites, and webhooks
+│
+├── components/                # Reusable React components (Vercel flat theme)
+├── lib/                       # Core utilities (AES encryption, RAG, auth, github)
+├── prisma/                    # Database models and pgvector schemas
+└── tests/                     # Unit and integration test coverage (Vitest)
 ```
 
-### 2. Configure Environment Variables
-Create a `.env` file at the root:
-```env
-# Database & Caching
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/pulseguard?schema=public"
-REDIS_URL="redis://localhost:6379"
+---
 
-# Better Auth & Core Secrets
-BETTER_AUTH_SECRET="your-better-auth-secret-32-chars-long"
+## 🚀 Setup & Local Deployment
+
+### 1. Environment Configuration
+Create a `.env` file at the root. Follow the schema defined below:
+
+```env
+# Database Connection (pgvector enabled)
+DATABASE_URL="postgresql://<user>:<password>@<host>:<port>/<db_name>?schema=public"
+
+# Redis Cache URI
+REDIS_URL="redis://<host>:<port>"
+
+# Better Auth Configuration
+BETTER_AUTH_SECRET="<your_auth_secret_key>"
 BETTER_AUTH_URL="http://localhost:3000"
 
-# GitHub App Integration
-GITHUB_APP_ID="your-github-app-id"
-GITHUB_APP_PRIVATE_KEY="your-github-app-private-key-with-\n-for-newlines"
-NEXT_PUBLIC_GITHUB_APP_SLUG="your-github-app-slug"
+# GitHub App Integration Credentials
+GITHUB_APP_ID="<your_github_app_id>"
+GITHUB_APP_PRIVATE_KEY="<your_github_app_private_key>"
+NEXT_PUBLIC_GITHUB_APP_SLUG="<your_github_app_slug>"
 ```
 
-### 3. Initialize Schema & Run App
-Install client libraries, generate Prisma structures, and boot the Next.js development server:
+### 2. Initialization & Boot
+Install packages, synchronize database models, and start the local compiler:
+
 ```bash
-# Install dependencies
+# 1. Install dependencies
 bun install
 
-# Run database migrations
+# 2. Sync database schemas and generate Prisma client
 bunx prisma db push
 bunx prisma generate
 
-# Start Next.js Turbopack
+# 3. Launch Next.js development server
 bun run dev
 ```
 
-### 4. Run the Test Suite
-We use **Vitest** for running backend unit and integration test coverage (including log fingerprinting, BYOM providers, invite flows, RBAC checks, and mocked Octokit git operations):
+### 3. Run the Test Suites
+Validate key normalization, encryption logic, RBAC scopes, and GitHub mocking configurations using the Vitest runner:
+
 ```bash
-# Run test suite
 bun run test
 ```
 
 ---
 
-## 🔒 Security & Multi-Tenant Isolation (RBAC)
+## 🔒 Access Control Matrix (RBAC)
 
-All operations enforce strict tenant boundary gates on the server side:
+Tenant boundaries and privileges are strictly isolated on the server level:
 
-| Request Route | Required Role | Guard Verification |
+| Action | Allowed Roles | Verification Security Check |
 | :--- | :--- | :--- |
-| **Telemetry Ingestion** | Valid API Key | Match `x-api-key` header to active organization |
-| **Manage AI Provider Keys** | `OWNER` / `ADMIN` | `requireOrganizationRole(orgId, ['OWNER', 'ADMIN'])` |
-| **GitHub PR Dispatch** | `OWNER` / `ADMIN` | `requireOrganizationRole(orgId, ['OWNER', 'ADMIN'])` |
-| **Workspace Invites** | `OWNER` / `ADMIN` | Checked in `POST /api/invites` |
-| **Incident War Room Chat** | `MEMBER` (and above) | `requireOrganizationMembership(orgId)` |
+| **Ingest Logs** | API Client | Matches `x-api-key` header to active organization |
+| **War Room Access** | `OWNER`, `ADMIN`, `MEMBER`, `VIEWER` | `requireOrganizationMembership(orgId)` |
+| **Manage AI Provider Keys** | `OWNER`, `ADMIN` | `requireOrganizationRole(orgId, ['OWNER', 'ADMIN'])` |
+| **Team Management / Invites** | `OWNER`, `ADMIN` | `requireOrganizationRole(orgId, ['OWNER', 'ADMIN'])` |
+| **Approve Git PR Dispatch** | `OWNER`, `ADMIN` | `requireOrganizationRole(orgId, ['OWNER', 'ADMIN'])` |
