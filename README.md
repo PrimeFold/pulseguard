@@ -1,85 +1,97 @@
-# PulseGuard 🚨
+# 🚨 PulseGuard: Autonomous SRE Incident Response Engine
 
-**PulseGuard** is an AI-assisted incident-response workspace designed for modern engineering teams. It unites your telemetry, runbooks, and codebase into a single AI-powered War Room, allowing autonomous agents to help you investigate and resolve production incidents at lightning speed.
-
----
-
-## ⚡ What It Does (For Users)
-
-When production breaks, you shouldn't have to scramble between 5 different tools. PulseGuard brings it all together:
-- **Centralized Telemetry:** Automatically groups repetitive error logs into actionable "Incidents".
-- **AI War Rooms:** Chat with an autonomous SRE agent (powered by Gemini) that can query your error logs for you.
-- **Repository Context:** The AI reads your GitHub repository code to understand *why* the stack trace failed.
-- **Hotfix Proposals:** The AI drafts a PR to fix the issue. You (the human) click "Approve", and it's sent to GitHub.
-- **Secure Workspaces:** Everything is scoped to your Organization, meaning strict Role-Based Access Control (RBAC).
+PulseGuard is an AI-assisted, multi-tenant incident response workspace. It unites microservice telemetry logs, operational runbooks, and GitHub codebases into real-time collaborative War Rooms. When production breaks, autonomous agents isolate the root cause and draft PR hotfixes for instant engineer approval.
 
 ---
 
-## 🛠️ How It Works (For Developers)
+## ⚡ Core Functions & Architecture
 
-PulseGuard is built on a modern, high-performance stack:
-
-- **Frontend:** Next.js 16 (App Router), React 19, Tailwind CSS (Vercel-style Dark Mode)
-- **Backend:** Node.js, Next.js Server Actions
-- **Database:** PostgreSQL with `pgvector` for semantic search, accessed via Prisma ORM 7
-- **Authentication:** Better Auth (handling organizations and invites)
-- **AI Integration:** Vercel AI SDK + Google Gemini 3.5 Flash
-- **GitHub Integration:** Octokit & GitHub Apps for reading repos and pushing patches
-
-### The AI & RAG Pipeline
-```text
-Document -> Chunking (600 chars) -> Gemini Embeddings -> pgvector -> Semantic Search
 ```
-When an incident occurs, the agent is provided tools (`query_telemetry_logs`, `fetch_repo_file`, `propose_hotfix`). It uses a React Server Component stream (`useChat` from Vercel AI SDK) to execute these tools in real-time, streaming the intermediate steps to the client. 
-
-### Telemetry Ingestion Flow
-Error logs are sent to the `/api/telemetry/ingest` endpoint.
-1. **Validation:** Zod validates the incoming payload.
-2. **Rate Limiting:** Protects the database from log spam.
-3. **Fingerprinting:** Groups identical stack traces.
-4. **Threshold Trigger:** If an error occurs > 3 times in 3 minutes, it creates an `Incident`.
-
----
-
-## 🚀 Local Setup
-
-### 1. Prerequisites
-- [Bun](https://bun.sh/) (Package Manager)
-- A running PostgreSQL database (with `vector` extension installed)
-
-### 2. Environment Variables
-Create a `.env.local` file at the root:
-
-```env
-DATABASE_URL="postgresql://user:pass@localhost:5432/pulseguard"
-BETTER_AUTH_URL="http://localhost:3000"
-TEXT_MODEL="gemini-3.5-flash"
-EMBEDDING_MODEL="text-embedding-004"
-GITHUB_APP_ID="your_app_id"
-GITHUB_APP_PRIVATE_KEY="your_private_key"
-NEXT_PUBLIC_GITHUB_APP_SLUG="your_app_slug"
+[Microservice Logs] ────> [Telemetry Ingest API] ────> [SHA-256 Fingerprinting]
+                                                             │
+                                                             ▼ (Accumulate in Redis)
+[GitHub PR Created] <─── [Approve Diff] <─── [SRE Agent] <─── [Incident Cluster Triggered]
 ```
 
-### 3. Install & Start
+### 1. High-Throughput Log Ingestion
+- **Sanitized Fingerprinting:** Sanitizes dynamic logs (stripping UUIDs, timestamps, hex keys, and IPs) to compute reproducible SHA-256 signatures in under 2ms.
+- **Sliding-Window Clustering:** If an error signature triggers $\ge 3$ times within a 3-minute window, an automated SRE War Room is provisioned.
+- **Auto-Pruning TTL:** Automatically prunes telemetry logs older than 7 days asynchronously in the background to prevent database bloat.
+
+### 2. Multi-Provider AI Engine (BYOM)
+- **Bring-Your-Own-Model:** Organizations can configure custom API keys for **Google Gemini**, **OpenAI**, **Anthropic**, **Groq**, and **OpenRouter**.
+- **Symmetric Encryption (AES-256-CBC):** API keys are encrypted at rest with random IVs and masked for UI display (`AIza...4F10`).
+- **Dynamic Model Discovery:** Models are fetched dynamically from official provider APIs and cached in Redis for 24 hours.
+
+### 3. pgvector Retrieval-Augmented Generation (RAG)
+- **Document Chunking:** Parses PDF and Markdown runbooks into 600-character semantic chunks with 60-character overlap.
+- **Similarity Search:** Indexes chunks using pgvector embeddings inside PostgreSQL, allowing SRE agents to retrieve diagnostic runbook context instantly.
+
+### 4. Human-in-the-Loop Git Hotfixes
+- **Sandboxed Agent:** SRE agents operate in a read-only environment to inspect code and stack traces.
+- **One-Click Pull Requests:** When a fix is generated, the agent proposes a patch. Clicking "Approve & Open PR" triggers an automated branch creation and Pull Request commit via the Octokit GitHub App integration.
+
+---
+
+## 🛠️ Technology Stack
+
+- **Frontend:** Next.js 16 (App Router), React 19, Tailwind CSS (Strict `rounded-none` Vercel theme), GSAP
+- **Database:** PostgreSQL 16 (with pgvector), Prisma ORM
+- **Caching & Rate Limiting:** Redis (`ioredis` client)
+- **Auth:** Better Auth (handling organizations, RBAC, and workspace invitations)
+- **AI Tooling:** Vercel AI SDK (`streamText`)
+
+---
+
+## 🚀 Local Infrastructure Setup
+
+### 1. Spin up Containers
+Ensure you have Docker installed, then boot the database and caching layers:
 ```bash
+docker-compose up -d
+```
+
+### 2. Configure Environment Variables
+Create a `.env` file at the root:
+```env
+# Database & Caching
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/pulseguard?schema=public"
+REDIS_URL="redis://localhost:6379"
+
+# Better Auth & Core Secrets
+BETTER_AUTH_SECRET="your-better-auth-secret-32-chars-long"
+BETTER_AUTH_URL="http://localhost:3000"
+
+# GitHub App Integration
+GITHUB_APP_ID="your-github-app-id"
+GITHUB_APP_PRIVATE_KEY="your-github-app-private-key-with-\n-for-newlines"
+NEXT_PUBLIC_GITHUB_APP_SLUG="your-github-app-slug"
+```
+
+### 3. Initialize Schema & Run App
+Install client libraries, generate Prisma structures, and boot the Next.js development server:
+```bash
+# Install dependencies
 bun install
+
+# Run database migrations
 bunx prisma db push
+bunx prisma generate
+
+# Start Next.js Turbopack
 bun run dev
 ```
 
-### 4. Running the Tests
-*Test suite commands pending implementation.*
-
 ---
 
-## 🔒 Security & Safeguards
-- **Human-in-the-Loop:** The AI **cannot** execute write operations (like creating PRs) without an explicit `OWNER` or `ADMIN` approval.
-- **Strict Authorization:** Server actions verify session boundaries before exposing telemetry.
-- **Rate Limiting:** Core AI routes and ingestion points are protected by memory-based rate limiters (easily swappable for Redis).
+## 🔒 Security & Multi-Tenant Isolation (RBAC)
 
----
+All operations enforce strict tenant boundary gates on the server side:
 
-## 🗺️ Roadmap (V2)
-- **Custom AI Models:** Bring-your-own API keys for Claude 3.5 Sonnet or GPT-4o.
-- **Vercel Drain Integration:** First-party Vercel log ingestion.
-- **Automated Root-Cause Post-mortems:** Generate and save a markdown summary of every resolved incident.
+| Request Route | Required Role | Guard Verification |
+| :--- | :--- | :--- |
+| **Telemetry Ingestion** | Valid API Key | Match `x-api-key` header to active organization |
+| **Manage AI Provider Keys** | `OWNER` / `ADMIN` | `requireOrganizationRole(orgId, ['OWNER', 'ADMIN'])` |
+| **GitHub PR Dispatch** | `OWNER` / `ADMIN` | `requireOrganizationRole(orgId, ['OWNER', 'ADMIN'])` |
+| **Workspace Invites** | `OWNER` / `ADMIN` | Checked in `POST /api/invites` |
+| **Incident War Room Chat** | `MEMBER` (and above) | `requireOrganizationMembership(orgId)` |

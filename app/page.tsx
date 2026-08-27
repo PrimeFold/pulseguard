@@ -56,7 +56,7 @@ export default function LandingPage() {
 
           <div className="flex items-center gap-3 font-mono text-[10px]">
             <Link
-              href="https://github.com/PrimeFold"
+              href="https://github.com/PrimeFold/pulseguard"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1 px-2.5 py-1 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 transition-colors rounded-none"
