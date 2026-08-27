@@ -35,7 +35,7 @@ describe("Workspace Invite & Accept Logic", () => {
 
   describe("POST /api/invites (Create Invite)", () => {
     it("should return 401 if user is not authenticated", async () => {
-      vi.mocked(getUser).mockResolvedValue(null);
+      vi.mocked(getUser).mockResolvedValue(null as any);
 
       const request = new NextRequest("http://localhost:3000/api/invites", {
         method: "POST",

@@ -7,11 +7,29 @@ import {
   fetchFileFromRepo,
   createFixPullRequest,
 } from "../github";
+import { searchKnowledgeBase } from "@/app/api/action/agent";
 
 const telemetryLevels = ["INFO", "WARN", "ERROR", "FATAL"] as const;
 
 export function createIncidentTools(organizationId: string) {
   return {
+    // Tool 1: Search parsed organization runbooks (RAG)
+    search_knowledge_base: tool({
+      description:
+        "Search the organization's parsed runbooks and troubleshooting documentation for matching error mitigation steps.",
+      inputSchema: z.object({
+        query: z
+          .string()
+          .describe("Semantic search query, e.g. 'postgres pool limit' or 'OAuth connection timeout'"),
+      }),
+      execute: async ({ query }) => {
+        try {
+          return await searchKnowledgeBase(query, organizationId);
+        } catch (err: any) {
+          return { error: err.message };
+        }
+      },
+    }),
     // Tool 1: Query telemetry logs..
     query_telemetry_logs: tool({
       description:
