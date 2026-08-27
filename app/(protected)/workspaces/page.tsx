@@ -21,22 +21,17 @@ export default async function WorkspacesHubPage() {
   if (!user) redirect("/login");
 
   // Fetch all memberships with organization and API key details
-  const memberships = await prisma.organizationMember.findMany({
+  const memberships = await (prisma.organizationMember as any).findMany({
     where: { userId: user.id },
     include: {
       organization: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          aiProvider: true,
-          aiApiKeyDisplay: true,
+        include: {
           _count: {
             select: {
               members: true,
             }
           }
-        },
+        }
       },
     },
     orderBy: { createdAt: "desc" },
