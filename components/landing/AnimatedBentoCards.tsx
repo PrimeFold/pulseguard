@@ -1,75 +1,88 @@
 "use client";
 
-import { motion } from "motion/react";
+import { useRef } from "react";
 import { Flame, Cpu, GitPullRequest, Database, Zap, Lock } from "lucide-react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 
 const FEATURES = [
   {
     icon: Flame,
     color: "text-red-400",
-    title: "Sliding-Window Anomaly Ingestion",
-    desc: "Deterministic regex sanitization strips dynamic variables (UUIDs, timestamps, IPs) to create reproducible SHA-256 error fingerprints.",
+    title: "Anomaly Ingestion Engine",
+    desc: "Deterministic sanitization strips variables (UUIDs, timestamps, IPs) to create reproducible SHA-256 error signatures.",
     module: "MODULE: /lib/telemetry.ts",
   },
   {
     icon: Cpu,
     color: "text-zinc-100",
-    title: "Multi-Model Dynamic SRE Engine",
-    desc: "Deploy Google Gemini, OpenAI GPT-4o, Anthropic Claude, Groq Llama, or OpenRouter with 24-hour Redis model discovery caching.",
+    title: "Multi-Model AI Orchestrator",
+    desc: "Deploy Google Gemini, OpenAI, Claude, or Groq with encrypted client keys and dynamic model catalog discovery.",
     module: "MODULE: /lib/ai/provider.ts",
   },
   {
     icon: GitPullRequest,
     color: "text-emerald-400",
-    title: "Human-in-the-Loop Hotfix Dispatch",
-    desc: "Fine-grained Octokit GitHub App integration ensures autonomous agents only create branches and open Pull Requests upon verified engineer approval.",
+    title: "Human-in-the-Loop Hotfixes",
+    desc: "Sandboxed SRE agents propose file modifications that are only committed to GitHub after authorized engineer approval.",
     module: "MODULE: /lib/github.ts",
   },
   {
     icon: Database,
     color: "text-blue-400",
-    title: "pgvector Semantic Knowledge RAG",
-    desc: "Parse PDF runbooks, markdown architecture specs, and post-mortems into semantic 600-character chunks with vector similarity search.",
+    title: "pgvector runbook RAG",
+    desc: "Index PDF runbooks and architectural specs into semantic 600-character chunks with vector similarity lookup.",
     module: "MODULE: /app/api/action/document.ts",
   },
   {
     icon: Zap,
     color: "text-yellow-400",
-    title: "Distributed Redis Architecture",
-    desc: "Atomic sliding-window IP rate limiting, telemetry deduplication, and 60-second dashboard aggregation caching powered by ioredis.",
+    title: "Distributed Redis Caching",
+    desc: "Sub-2ms dashboard rendering, IP rate limiting, and log deduplication built on an atomic ioredis cluster.",
     module: "MODULE: /lib/redis.ts",
   },
   {
     icon: Lock,
     color: "text-zinc-300",
     title: "Multi-Tenant RBAC Isolation",
-    desc: "Better Auth integration with compound tenant authorization checks protecting organizations, API keys, and workspace members.",
+    desc: "Strict tenancy checks protecting incidents, organization settings, and member role access levels at the database level.",
     module: "MODULE: /lib/authorization.ts",
   },
 ];
 
 export function AnimatedBentoCards() {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    gsap.from(".bento-card", {
+      opacity: 0,
+      y: 12,
+      stagger: 0.05,
+      duration: 0.5,
+      ease: "power2.out",
+      scrollTrigger: {
+        trigger: containerRef.current,
+        start: "top 85%",
+      }
+    });
+  }, { scope: containerRef });
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+    <div ref={containerRef} className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {FEATURES.map((feature, idx) => (
-        <motion.div
+        <div
           key={idx}
-          initial={{ opacity: 0, y: 15 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-40px" }}
-          transition={{ duration: 0.35, delay: idx * 0.08 }}
-          whileHover={{ y: -2, transition: { duration: 0.15 } }}
-          className="border border-zinc-800 bg-black p-6 space-y-4 text-left rounded-none hover:border-zinc-700 transition-colors group relative"
+          className="bento-card border border-zinc-800 bg-black p-4 space-y-3 text-left rounded-none hover:border-zinc-700 hover:bg-zinc-950/20 transition-all duration-150 group relative"
         >
-          <div className="h-8 w-8 bg-zinc-900 border border-zinc-800 flex items-center justify-center rounded-none group-hover:border-zinc-700 transition-colors">
-            <feature.icon className={`h-4 w-4 ${feature.color}`} />
+          <div className="h-7 w-7 bg-zinc-900 border border-zinc-800 flex items-center justify-center rounded-none group-hover:border-zinc-700 transition-colors">
+            <feature.icon className={`h-3.5 w-3.5 ${feature.color}`} />
           </div>
-          <h3 className="text-sm font-semibold font-mono text-white tracking-tight">{feature.title}</h3>
-          <p className="text-xs text-zinc-400 font-sans leading-relaxed">{feature.desc}</p>
-          <div className="pt-2 font-mono text-[11px] text-zinc-600 border-t border-zinc-900 group-hover:text-zinc-500 transition-colors">
+          <h3 className="text-xs font-semibold font-mono text-white tracking-tight">{feature.title}</h3>
+          <p className="text-[11px] text-zinc-400 font-sans leading-relaxed">{feature.desc}</p>
+          <div className="pt-2 font-mono text-[10px] text-zinc-600 border-t border-zinc-900 group-hover:text-zinc-500 transition-colors">
             {feature.module}
           </div>
-        </motion.div>
+        </div>
       ))}
     </div>
   );
