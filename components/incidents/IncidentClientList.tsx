@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   AlertOctagon,
   Flame,
@@ -27,6 +28,7 @@ interface IncidentItem {
 
 interface Props {
   organizationId: string;
+  orgSlug: string;
   initialIncidents: IncidentItem[];
   initialCounts: {
     ALL: number;
@@ -38,9 +40,11 @@ interface Props {
 
 export function IncidentListClient({
   organizationId,
+  orgSlug,
   initialIncidents,
   initialCounts,
 }: Props) {
+  const router = useRouter();
   const [incidents, setIncidents] = useState<IncidentItem[]>(initialIncidents);
   const [activeTab, setActiveTab] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -188,7 +192,11 @@ export function IncidentListClient({
             {filteredIncidents.map((incident) => (
               <Link
                 key={incident.id}
-                href={`/${organizationId}/incidents/${incident.id}`}
+                href={`/${orgSlug}/incidents/${incident.id}`}
+                prefetch={true}
+                onMouseEnter={() =>
+                  router.prefetch(`/${orgSlug}/incidents/${incident.id}`)
+                }
                 className="incident-row flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 hover:bg-zinc-950 transition-colors group cursor-pointer"
               >
                 <div className="space-y-3 flex-1 min-w-0">
@@ -205,7 +213,7 @@ export function IncidentListClient({
                 </div>
 
                 <div className="flex items-center justify-between sm:justify-end gap-6 shrink-0 mt-2 sm:mt-0">
-                  <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-500 uppercase">
+                  <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-500 uppercase" suppressHydrationWarning>
                     <Clock className="h-3 w-3 text-zinc-600" />
                     {new Date(incident.createdAt).toLocaleDateString()}
                   </div>

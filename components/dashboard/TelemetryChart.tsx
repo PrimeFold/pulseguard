@@ -2,13 +2,6 @@
 
 import { Area, AreaChart, XAxis, YAxis } from "recharts";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
@@ -29,49 +22,45 @@ interface TelemetryChartProps {
 const chartConfig = {
   errors: {
     label: "Errors & Fatal",
-    color: "hsl(0, 84%, 60%)", // Red
+    color: "hsl(0, 84%, 60%)",
   },
   warnings: {
     label: "Warnings",
-    color: "hsl(38, 92%, 50%)", // Amber
+    color: "hsl(38, 92%, 50%)",
   },
   info: {
     label: "Info / Normal",
-    color: "hsl(263, 70%, 50%)", // Purple
+    color: "hsl(263, 70%, 50%)",
   },
 } satisfies ChartConfig;
 
 export function TelemetryChart({ data }: TelemetryChartProps) {
   return (
-    <Card className="bg-zinc-950/60 border-zinc-800 text-zinc-100 backdrop-blur">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-sm font-semibold tracking-tight">
-              Telemetry Ingestion & Error Volume
-            </CardTitle>
-            <CardDescription className="text-xs text-zinc-400">
-              Log distributions across all connected services (Last 24 hours)
-            </CardDescription>
-          </div>
-          <div className="flex items-center gap-4 text-xs font-mono">
-            <span className="flex items-center gap-1.5 text-red-400">
-              <span className="h-2 w-2 rounded-full bg-red-500" /> Errors
-            </span>
-            <span className="flex items-center gap-1.5 text-amber-400">
-              <span className="h-2 w-2 rounded-full bg-amber-500" /> Warnings
-            </span>
-            <span className="flex items-center gap-1.5 text-purple-400">
-              <span className="h-2 w-2 rounded-full bg-purple-500" /> Info
-            </span>
-          </div>
+    <div className="w-full h-full flex flex-col justify-between">
+      {/* Legend */}
+      <div className="flex items-center justify-between pb-3 border-b border-zinc-900 font-mono text-[10px]">
+        <span className="text-zinc-500 uppercase tracking-widest">
+          REALTIME STREAM
+        </span>
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-1.5 text-red-400">
+            <span className="h-1.5 w-1.5 rounded-none bg-red-500" /> ERRORS
+          </span>
+          <span className="flex items-center gap-1.5 text-amber-400">
+            <span className="h-1.5 w-1.5 rounded-none bg-amber-500" /> WARN
+          </span>
+          <span className="flex items-center gap-1.5 text-purple-400">
+            <span className="h-1.5 w-1.5 rounded-none bg-purple-500" /> INFO
+          </span>
         </div>
-      </CardHeader>
-      <CardContent className="pt-4">
-        <ChartContainer config={chartConfig} className="h-65 w-full">
+      </div>
+
+      {/* Chart Canvas */}
+      <div className="flex-1 w-full pt-2">
+        <ChartContainer config={chartConfig} className="h-56 w-full">
           <AreaChart
             data={data}
-            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+            margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
           >
             <defs>
               <linearGradient id="fillErrors" x1="0" y1="0" x2="0" y2="1">
@@ -90,16 +79,18 @@ export function TelemetryChart({ data }: TelemetryChartProps) {
             <XAxis
               dataKey="time"
               stroke="#52525b"
-              fontSize={11}
+              fontSize={10}
               tickLine={false}
               axisLine={false}
+              fontFamily="monospace"
             />
             <YAxis
               stroke="#52525b"
-              fontSize={11}
+              fontSize={10}
               tickLine={false}
               axisLine={false}
               allowDecimals={false}
+              fontFamily="monospace"
             />
             <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
             <Area
@@ -128,7 +119,7 @@ export function TelemetryChart({ data }: TelemetryChartProps) {
             />
           </AreaChart>
         </ChartContainer>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

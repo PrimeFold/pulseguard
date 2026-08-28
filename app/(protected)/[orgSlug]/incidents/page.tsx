@@ -1,14 +1,20 @@
-import { getIncidentsList } from '@/app/api/action/incident';
-import { IncidentListClient } from '@/components/incidents/IncidentClientList';
-import { AlertOctagon } from 'lucide-react';
+import { getIncidentsList } from "@/app/api/action/incident";
+import { IncidentListClient } from "@/components/incidents/IncidentClientList";
+import { AlertOctagon } from "lucide-react";
 
-import { getOrganizationAndMembership } from '@/lib/tenant';
+import { getOrganizationAndMembership } from "@/lib/tenant";
 
-export default async function IncidentsPage({ params }: { params: Promise<{ orgSlug: string }> }) {
+export default async function IncidentsPage({
+  params,
+}: {
+  params: Promise<{ orgSlug: string }>;
+}) {
   const { orgSlug } = await params;
   const { org } = await getOrganizationAndMembership(orgSlug);
   const currentOrgId = org.id;
-  const { incidents, counts } = await getIncidentsList({ organizationId: currentOrgId });
+  const { incidents, counts } = await getIncidentsList({
+    organizationId: currentOrgId,
+  });
 
   return (
     <div className="space-y-12">
@@ -28,6 +34,7 @@ export default async function IncidentsPage({ params }: { params: Promise<{ orgS
 
       <IncidentListClient
         organizationId={currentOrgId}
+        orgSlug={org.slug}
         initialIncidents={incidents}
         initialCounts={counts}
       />

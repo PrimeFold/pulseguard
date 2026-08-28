@@ -224,6 +224,16 @@ export async function getIncidentsList({
   const [incidents, stats] = await Promise.all([
     prisma.incident.findMany({
       where: whereClause,
+      select: {
+        id: true,
+        title: true,
+        service: true,
+        severity: true,
+        status: true,
+        createdAt: true,
+        fingerprint: true,
+        description: true,
+      },
       orderBy: { createdAt: 'desc' },
     }),
     prisma.incident.groupBy({
@@ -233,11 +243,16 @@ export async function getIncidentsList({
     }),
   ]);
 
+  const openCount = stats.find((s: any) => s.status === 'OPEN')?._count.id || 0;
+  const investigatingCount = stats.find((s: any) => s.status === 'INVESTIGATING')?._count.id || 0;
+  const resolvedCount = stats.find((s: any) => s.status === 'RESOLVED')?._count.id || 0;
+  const totalCount = stats.reduce((acc: number, curr: any) => acc + curr._count.id, 0);
+
   const counts = {
-    ALL: incidents.length,
-    OPEN: stats.find((s: any) => s.status === 'OPEN')?._count.id || 0,
-    INVESTIGATING: stats.find((s: any) => s.status === 'INVESTIGATING')?._count.id || 0,
-    RESOLVED: stats.find((s: any) => s.status === 'RESOLVED')?._count.id || 0,
+    ALL: totalCount,
+    OPEN: openCount,
+    INVESTIGATING: investigatingCount,
+    RESOLVED: resolvedCount,
   };
 
   return { incidents, counts };

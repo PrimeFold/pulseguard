@@ -1,20 +1,20 @@
-import Link from 'next/link';
-import { getOrganizationAndMembership } from '@/lib/tenant';
-import { TelemetryChart } from '@/components/dashboard/TelemetryChart';
-import { DashboardOverviewClient } from '@/components/dashboard/DashboardOverviewClient';
-import { Button } from '@/components/ui/button';
-import { 
-  ShieldAlert, 
-  Activity, 
-  Clock, 
-  GitBranch, 
-  Flame, 
-  ArrowRight, 
-  CheckCircle2, 
-  Terminal 
-} from 'lucide-react';
-import { prisma } from '@/lib/auth';
-import { redis } from '@/lib/redis';
+import Link from "next/link";
+import { getOrganizationAndMembership } from "@/lib/tenant";
+import { TelemetryChart } from "@/components/dashboard/TelemetryChart";
+import { DashboardOverviewClient } from "@/components/dashboard/DashboardOverviewClient";
+import { Button } from "@/components/ui/button";
+import {
+  ShieldAlert,
+  Activity,
+  Clock,
+  GitBranch,
+  Flame,
+  ArrowRight,
+  CheckCircle2,
+  Terminal,
+} from "lucide-react";
+import { prisma } from "@/lib/auth";
+import { redis } from "@/lib/redis";
 
 interface OverviewPageProps {
   params: Promise<{ orgSlug: string }>;
@@ -31,37 +31,47 @@ export default async function OrgOverviewPage({ params }: OverviewPageProps) {
   if (dashboardDataStr) {
     dashboardData = JSON.parse(dashboardDataStr);
   } else {
-    const [openIncidents, totalResolved, recentLogs, recentIncidents] = await Promise.all([
-      prisma.incident.findMany({
-        where: { organizationId: org.id, status: 'OPEN' },
-        orderBy: { createdAt: 'desc' },
-        take: 5,
-      }),
-      prisma.incident.count({
-        where: { organizationId: org.id, status: 'RESOLVED' },
-      }),
-      prisma.telemetryLog.findMany({
-        where: { organizationId: org.id },
-        orderBy: { timestamp: 'desc' },
-        take: 100,
-      }),
-      prisma.incident.findMany({
-        where: { organizationId: org.id },
-        orderBy: { createdAt: 'desc' },
-        take: 5,
-      }),
-    ]);
+    const [openIncidents, totalResolved, recentLogs, recentIncidents] =
+      await Promise.all([
+        prisma.incident.findMany({
+          where: { organizationId: org.id, status: "OPEN" },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        }),
+        prisma.incident.count({
+          where: { organizationId: org.id, status: "RESOLVED" },
+        }),
+        prisma.telemetryLog.findMany({
+          where: { organizationId: org.id },
+          orderBy: { timestamp: "desc" },
+          take: 100,
+        }),
+        prisma.incident.findMany({
+          where: { organizationId: org.id },
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        }),
+      ]);
 
-    dashboardData = { openIncidents, totalResolved, recentLogs, recentIncidents };
+    dashboardData = {
+      openIncidents,
+      totalResolved,
+      recentLogs,
+      recentIncidents,
+    };
     await redis.setex(cacheKey, 60, JSON.stringify(dashboardData));
   }
 
-  const { openIncidents, totalResolved, recentLogs, recentIncidents } = dashboardData;
+  const { openIncidents, totalResolved, recentLogs, recentIncidents } =
+    dashboardData;
 
   const now = Date.now();
   const buckets = [5, 4, 3, 2, 1, 0].map((hoursAgo) => {
     const bucketTime = new Date(now - hoursAgo * 60 * 60 * 1000);
-    const timeLabel = bucketTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const timeLabel = bucketTime.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
     const windowStart = now - (hoursAgo + 1) * 60 * 60 * 1000;
     const windowEnd = now - hoursAgo * 60 * 60 * 1000;
 
@@ -72,9 +82,13 @@ export default async function OrgOverviewPage({ params }: OverviewPageProps) {
 
     return {
       time: timeLabel,
-      errors: logsInBucket.filter((l: any) => l.level === 'ERROR' || l.level === 'FATAL').length,
-      warnings: logsInBucket.filter((l: any) => l.level === 'WARN').length,
-      info: logsInBucket.filter((l: any) => l.level === 'INFO' || l.level === 'DEBUG').length,
+      errors: logsInBucket.filter(
+        (l: any) => l.level === "ERROR" || l.level === "FATAL",
+      ).length,
+      warnings: logsInBucket.filter((l: any) => l.level === "WARN").length,
+      info: logsInBucket.filter(
+        (l: any) => l.level === "INFO" || l.level === "DEBUG",
+      ).length,
     };
   });
 
@@ -92,13 +106,14 @@ export default async function OrgOverviewPage({ params }: OverviewPageProps) {
         </div>
 
         {openIncidents.length > 0 && (
-          <Link 
+          <Link
             href={`/${org.slug}/incidents/${openIncidents[0].id}`}
+            prefetch={true}
             className="group flex items-center justify-between gap-4 px-4 py-3 bg-red-950/20 border border-red-900/50 hover:bg-red-900/30 transition-all rounded-none active:scale-[0.98]"
           >
             <div className="flex items-center gap-3 text-red-500 font-mono text-xs font-bold uppercase tracking-widest">
-               <Flame className="h-4 w-4 animate-pulse" /> 
-               <span>Active War Room</span>
+              <Flame className="h-4 w-4 animate-pulse" />
+              <span>Talk to AI Agent</span>
             </div>
             <ArrowRight className="h-4 w-4 text-red-500 group-hover:translate-x-1 transition-transform" />
           </Link>
@@ -106,9 +121,9 @@ export default async function OrgOverviewPage({ params }: OverviewPageProps) {
       </div>
 
       {/* Delegate remaining interactive dense layout to Client Component for GSAP */}
-      <DashboardOverviewClient 
-        org={org} 
-        openIncidents={openIncidents} 
+      <DashboardOverviewClient
+        org={org}
+        openIncidents={openIncidents}
         totalResolved={totalResolved}
         recentLogs={recentLogs}
         recentIncidents={recentIncidents}

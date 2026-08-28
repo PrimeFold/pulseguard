@@ -1,9 +1,9 @@
 import { notFound, redirect } from "next/navigation";
 import { getUser } from "./session";
 import { prisma } from "./auth";
+import { cache } from "react";
 
-
-export async function getOrganizationAndMembership(slug: string) {
+export const getOrganizationAndMembership = cache(async (slug: string) => {
   const user = await getUser();
   if (!user) redirect('/login');
 
@@ -28,4 +28,4 @@ export async function getOrganizationAndMembership(slug: string) {
     membership: org.members[0],
     user,
   };
-}
+});

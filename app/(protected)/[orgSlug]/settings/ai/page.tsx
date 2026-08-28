@@ -16,10 +16,10 @@ export default async function AiSettingsPage({ params }: Props) {
   const canManage = membership.role === "OWNER" || membership.role === "ADMIN";
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-zinc-900">
-        <div className="space-y-1.5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-900">
+        <div className="space-y-1">
           <div className="flex items-center gap-3">
             <Cpu className="h-6 w-6 text-purple-500" />
             <h1 className="text-3xl font-mono tracking-tighter text-white uppercase">

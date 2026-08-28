@@ -13,6 +13,8 @@ import {
   KeyRound,
   AlertTriangle,
   Check,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
@@ -23,6 +25,8 @@ function ResetPasswordForm() {
   const token = searchParams.get("token") || "";
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -68,35 +72,56 @@ function ResetPasswordForm() {
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!password || !confirmPassword) return;
+    setError("");
+    setSuccess(false);
+
+    if (!password.trim() || !confirmPassword.trim()) {
+      setError("Please enter and confirm your new password.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      return;
+    }
 
     if (password !== confirmPassword) {
-      setError("Credentials do not match. Verification failed.");
+      setError("Passwords do not match. Please verify.");
+      return;
+    }
+
+    if (!token) {
+      setError(
+        "Missing security reset token. Please use the full recovery link.",
+      );
       return;
     }
 
     setLoading(true);
-    setError("");
-    setSuccess(false);
 
-    // Using better-auth reset logic. Token passed explicitly or inferred.
-    const { error: resetError } = await authClient.resetPassword({
-      newPassword: password,
-      token: token || undefined,
-    });
+    try {
+      // Using better-auth reset logic.
+      const { error: resetError } = await authClient.resetPassword({
+        newPassword: password,
+        token: token,
+      });
 
-    if (resetError) {
-      setError(
-        resetError.message ||
-          "Failed to reset password. Link may be invalid or expired.",
-      );
-    } else {
-      setSuccess(true);
-      setTimeout(() => {
-        router.push("/login");
-      }, 2500);
+      if (resetError) {
+        setError(
+          resetError.message ||
+            "Failed to reset password. Link may be invalid or expired.",
+        );
+      } else {
+        setSuccess(true);
+        setTimeout(() => {
+          router.push("/login");
+        }, 2000);
+      }
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -130,28 +155,64 @@ function ResetPasswordForm() {
                   <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
                     New Password
                   </label>
-                  <Input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    className="bg-zinc-900 border-zinc-800 text-zinc-100 text-xs rounded-none h-9 font-mono placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-zinc-700"
-                  />
+                  <div className="relative flex items-center">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      className="bg-zinc-900 border-zinc-800 text-zinc-100 text-xs rounded-none h-9 font-mono placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-zinc-700 pr-9"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-2 text-zinc-500 hover:text-zinc-200 transition-colors p-1 cursor-pointer"
+                      tabIndex={-1}
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-3.5 w-3.5" />
+                      ) : (
+                        <Eye className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
                     Confirm Password
                   </label>
-                  <Input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    className="bg-zinc-900 border-zinc-800 text-zinc-100 text-xs rounded-none h-9 font-mono placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-zinc-700"
-                  />
+                  <div className="relative flex items-center">
+                    <Input
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      className="bg-zinc-900 border-zinc-800 text-zinc-100 text-xs rounded-none h-9 font-mono placeholder:text-zinc-600 focus-visible:ring-1 focus-visible:ring-zinc-700 pr-9"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      className="absolute right-2 text-zinc-500 hover:text-zinc-200 transition-colors p-1 cursor-pointer"
+                      tabIndex={-1}
+                      aria-label={
+                        showConfirmPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-3.5 w-3.5" />
+                      ) : (
+                        <Eye className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -169,8 +230,8 @@ function ResetPasswordForm() {
 
               <Button
                 type="submit"
-                disabled={loading || !password || !confirmPassword}
-                className="w-full bg-white hover:bg-zinc-200 text-black border border-transparent font-mono text-xs font-bold tracking-widest uppercase rounded-none h-9 mt-2 transition-all duration-300 active:scale-[0.98]"
+                disabled={loading}
+                className="w-full bg-white hover:bg-zinc-200 text-black border border-transparent font-mono text-xs font-bold tracking-widest uppercase rounded-none h-9 mt-2 transition-all duration-300 active:scale-[0.98] cursor-pointer"
               >
                 {loading ? (
                   <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />

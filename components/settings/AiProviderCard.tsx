@@ -174,7 +174,7 @@ export function AiProviderCard({
 
   return (
     <div className="border border-zinc-900 bg-black overflow-hidden relative">
-      <div className="p-6 border-b border-zinc-900 bg-zinc-950/50">
+      <div className="p-4 border-b border-zinc-900 bg-zinc-950/50">
         <div className="flex items-center gap-3 mb-2">
           <Sparkles className="h-5 w-5 text-purple-500" />
           <h2 className="text-sm font-mono font-semibold tracking-widest text-white uppercase">
@@ -189,7 +189,7 @@ export function AiProviderCard({
 
       <form onSubmit={handleSave} className="divide-y divide-zinc-900/50">
         {/* Provider Selection */}
-        <div className="p-6 space-y-4">
+        <div className="p-4 space-y-3">
           <label className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">
             LLM Provider
           </label>
@@ -225,7 +225,7 @@ export function AiProviderCard({
         </div>
 
         {/* API Key Connection */}
-        <div className="p-6 space-y-4 bg-zinc-950/30">
+        <div className="p-4 space-y-3 bg-zinc-950/30">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <label className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 flex items-center gap-2">
               <Key className="h-3.5 w-3.5" /> Provider API Key
@@ -247,7 +247,7 @@ export function AiProviderCard({
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               disabled={!canManage}
-              className="bg-black border-zinc-900 text-zinc-100 font-mono text-xs h-10 rounded-none placeholder:text-zinc-700 focus-visible:ring-1 focus-visible:ring-zinc-700 flex-1"
+              className="bg-black border-zinc-900 text-zinc-100 font-mono text-xs h-8 rounded-none placeholder:text-zinc-700 focus-visible:ring-1 focus-visible:ring-zinc-700 flex-1"
             />
             {canManage && apiKeyDisplay && (
               <Button
@@ -255,7 +255,7 @@ export function AiProviderCard({
                 variant="outline"
                 onClick={handleRemoveKey}
                 disabled={deleting}
-                className="bg-transparent hover:bg-red-950/30 text-zinc-400 hover:text-red-400 border border-zinc-800 hover:border-red-900/50 rounded-none h-10 font-mono text-[10px] uppercase tracking-widest px-4 transition-all"
+                className="bg-transparent hover:bg-red-950/30 text-zinc-400 hover:text-red-400 border border-zinc-800 hover:border-red-900/50 rounded-none h-8 font-mono text-[10px] uppercase tracking-widest px-4 transition-all"
               >
                 {deleting ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -273,8 +273,8 @@ export function AiProviderCard({
         </div>
 
         {/* Models Config */}
-        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 bg-black">
-          <div className="space-y-4">
+        <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 bg-black">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">
                 Text / Reasoning Model
@@ -290,7 +290,7 @@ export function AiProviderCard({
                 onChange={(e) => setModel(e.target.value)}
                 disabled={!canManage}
                 placeholder="e.g. gpt-4o"
-                className="bg-zinc-950 border-zinc-900 text-zinc-300 font-mono text-[11px] h-10 rounded-none focus-visible:ring-1 focus-visible:ring-zinc-700"
+                className="bg-zinc-950 border-zinc-900 text-zinc-300 font-mono text-[11px] h-8 rounded-none focus-visible:ring-1 focus-visible:ring-zinc-700"
               />
             ) : (
               <select
@@ -301,7 +301,7 @@ export function AiProviderCard({
                   else setModel(e.target.value);
                 }}
                 disabled={!canManage || fetchingModels}
-                className="w-full bg-zinc-950 border border-zinc-900 text-zinc-300 font-mono text-[11px] h-10 px-3 rounded-none focus:outline-none appearance-none"
+                className="w-full bg-zinc-950 border border-zinc-900 text-zinc-300 font-mono text-[11px] h-8 px-3 rounded-none focus:outline-none appearance-none"
               >
                 {availableModels.map((m) => (
                   <option key={m} value={m}>
@@ -316,7 +316,7 @@ export function AiProviderCard({
             )}
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             <label className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">
               Vector Embedding Model
             </label>
@@ -324,7 +324,7 @@ export function AiProviderCard({
               value={embeddingModel}
               onChange={(e) => setEmbeddingModel(e.target.value)}
               disabled={!canManage || fetchingModels}
-              className="w-full bg-zinc-950 border border-zinc-900 text-zinc-300 font-mono text-[11px] h-10 px-3 rounded-none focus:outline-none appearance-none"
+              className="w-full bg-zinc-950 border border-zinc-900 text-zinc-300 font-mono text-[11px] h-8 px-3 rounded-none focus:outline-none appearance-none"
             >
               {availableEmbeddings.map((m) => (
                 <option key={m} value={m}>

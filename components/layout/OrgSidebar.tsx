@@ -101,6 +101,7 @@ export function OrgSidebar({
                 <Link
                   key={item.href}
                   href={item.href}
+                  prefetch={true}
                   className={cn(
                     "nav-item flex items-center gap-3 px-3 py-2 rounded-none text-xs transition-all duration-200 active:scale-[0.98] border border-transparent",
                     isActive

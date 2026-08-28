@@ -3,8 +3,9 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { auth } from './auth';
+import { cache } from 'react';
 
-export async function getUser() {
+export const getUser = cache(async () => {
   const session = await auth.api.getSession({ headers: await headers() });
 
   if (!session || !session.user) {
@@ -12,4 +13,4 @@ export async function getUser() {
   }
 
   return session.user;
-}
+});

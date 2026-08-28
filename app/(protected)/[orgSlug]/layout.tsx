@@ -1,4 +1,3 @@
-// app/[orgSlug]/layout.tsx
 import { DashboardShell } from '@/components/dashboard/DashboardShell';
 import { getOrganizationAndMembership } from '@/lib/tenant';
 
