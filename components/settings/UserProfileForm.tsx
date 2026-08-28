@@ -88,7 +88,7 @@ export function UserProfileForm({ user }: { user: { id: string; name: string; em
           )}
         </CardContent>
 
-        <CardFooter className="border-t border-zinc-900 px-6 py-4 bg-zinc-950/40">
+        <CardFooter className="border-t border-zinc-900 px-6 py-4 bg-zinc-950/40 flex items-center justify-between">
           <Button
             type="submit"
             disabled={loading || name === user.name}
@@ -96,6 +96,17 @@ export function UserProfileForm({ user }: { user: { id: string; name: string; em
           >
             {loading && <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />}
             SAVE CHANGES
+          </Button>
+
+          <Button
+            type="button"
+            onClick={async () => {
+              await authClient.signOut();
+              window.location.href = "/login";
+            }}
+            className="bg-transparent hover:bg-red-950/30 text-zinc-400 hover:text-red-400 border border-zinc-800 hover:border-red-900/50 font-mono text-[10px] font-semibold tracking-wider rounded-none h-8 px-3 transition-all duration-300 active:scale-[0.98] cursor-pointer"
+          >
+            SIGN OUT
           </Button>
         </CardFooter>
       </form>
