@@ -35,7 +35,7 @@ export default async function OrgOverviewPage({ params }: OverviewPageProps) {
     // 1. Fetch Metrics & Active Incidents in parallel
     const [openIncidents, totalResolved, recentLogs, recentIncidents] = await Promise.all([
       prisma.incident.findMany({
-        where: { organizationId: org.id, status: 'TRIGGERED' },
+        where: { organizationId: org.id, status: 'OPEN' },
         orderBy: { createdAt: 'desc' },
         take: 5,
       }),
@@ -192,7 +192,7 @@ export default async function OrgOverviewPage({ params }: OverviewPageProps) {
                     <Badge
                       variant="outline"
                       className={`text-[10px] ${
-                        incident.status === 'TRIGGERED'
+                        incident.status === 'OPEN'
                           ? 'bg-red-500/10 text-red-400 border-red-500/30'
                           : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                       }`}

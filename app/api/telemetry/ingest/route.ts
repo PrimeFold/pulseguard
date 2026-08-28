@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
           where: {
             organizationId: org.id,
             fingerprint,
-            status: "TRIGGERED",
+            status: "OPEN",
           },
           select: { id: true }
         });
@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
               title: `${sample.service}: ${sample.cleanPattern.slice(0, 75)}...`,
               description: `Automated incident triggered by error cluster.\nSignature: \`${sample.cleanPattern}\``,
               severity: "HIGH",
-              status: "TRIGGERED",
+              status: "OPEN",
               errorPayload: sample.metadata || { message: sample.message },
             },
             select: { id: true }

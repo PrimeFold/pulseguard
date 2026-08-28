@@ -21,7 +21,7 @@ const LOG_SEQUENCE = [
   },
   {
     time: "08:42:01.512",
-    type: "INCIDENT_TRIGGERED",
+    type: "INCIDENT_OPEN",
     color: "text-red-400",
     text: "War Room #inc_89491 opened — SRE Agent Initialized",
   },

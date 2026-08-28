@@ -175,7 +175,7 @@ model DocumentChunk {
 // ----------------------------------------------------
 
 enum IncidentStatus {
-  TRIGGERED
+  OPEN
   INVESTIGATING
   MITIGATED
   RESOLVED
@@ -194,7 +194,7 @@ model Incident {
   title             String
   service           String
   severity          Severity         @default(HIGH)
-  status            IncidentStatus   @default(TRIGGERED)
+  status            IncidentStatus   @default(OPEN)
   errorPayload      Json
   rootCauseAnalysis String?          @db.Text
   organizationId    String

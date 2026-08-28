@@ -16,6 +16,7 @@ import {
 import { getUser } from "@/lib/session";
 import { prisma } from "@/lib/auth";
 import { UserProfileForm } from "@/components/settings/UserProfileForm";
+import { NotificationPanel } from "@/components/notifications/NotificationPanel";
 
 export default async function WorkspacesHubPage() {
   const user = await getUser();
@@ -60,6 +61,7 @@ export default async function WorkspacesHubPage() {
             <Link href="/docs" className="hover:text-white transition-colors duration-150">DOCS</Link>
             <span className="text-zinc-800">|</span>
             <span className="text-zinc-300 font-medium">{user.email}</span>
+            <NotificationPanel />
           </div>
         </header>
 

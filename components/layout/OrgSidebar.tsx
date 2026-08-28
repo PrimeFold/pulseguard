@@ -10,6 +10,7 @@ import {
   Sparkles,
   ArrowLeftRight} from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { NotificationPanel } from "@/components/notifications/NotificationPanel";
 
 export function OrgSidebar({ org, userRole }: { org: any; userRole: string; user: any }) {
   const pathname = usePathname();
@@ -27,17 +28,18 @@ export function OrgSidebar({ org, userRole }: { org: any; userRole: string; user
     <aside className="w-64 border-r border-border bg-[#0a0a0a] flex flex-col justify-between shrink-0">
       <div className="p-4 space-y-6">
         {/* Workspace Switcher Header */}
-        <div className="space-y-1">
+        <div className="flex items-center gap-2">
           <Link
             href="/workspaces"
-            className="flex items-center justify-between p-2 rounded-lg bg-black border border-border hover:bg-zinc-950 transition-colors group"
+            className="flex-1 flex items-center justify-between p-2 rounded-none bg-black border border-border hover:bg-zinc-950 transition-colors group"
           >
             <div className="min-w-0">
               <p className="text-sm font-medium text-white truncate">{org.name}</p>
-              <p className="text-xs text-muted-foreground">/{org.slug}</p>
+              <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">/{org.slug}</p>
             </div>
             <ArrowLeftRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-white shrink-0 transition-colors" />
           </Link>
+          <NotificationPanel />
         </div>
 
         {/* Navigation Links */}

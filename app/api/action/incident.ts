@@ -69,7 +69,7 @@ export async function createIncidentAction(data: IncidentParams) {
           severity: data.severity,
           errorPayload: data.errorPayload,
           organizationId: data.organizationId,
-          status: IncidentStatus.TRIGGERED,
+          status: IncidentStatus.OPEN,
         },
       });
 
@@ -235,7 +235,7 @@ export async function getIncidentsList({
 
   const counts = {
     ALL: incidents.length,
-    OPEN: stats.find((s: any) => s.status === 'TRIGGERED')?._count.id || 0,
+    OPEN: stats.find((s: any) => s.status === 'OPEN')?._count.id || 0,
     INVESTIGATING: stats.find((s: any) => s.status === 'INVESTIGATING')?._count.id || 0,
     RESOLVED: stats.find((s: any) => s.status === 'RESOLVED')?._count.id || 0,
   };

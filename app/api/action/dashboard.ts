@@ -13,7 +13,7 @@ export async function getDashboardOverview(organizationId:string){
             where:{
                 organizationId , 
                 status:{
-                    in : ['TRIGGERED','INVESTIGATING']
+                    in : ['OPEN','INVESTIGATING']
                 }
             },
             orderBy:{createdAt:'asc'},
