@@ -14,7 +14,14 @@ export const auth = betterAuth({
     emailAndPassword:{
         enabled:true,
         maxPasswordLength:30,
-        minPasswordLength:6
+        minPasswordLength:6,
+        sendResetPassword: async ({ user, url, token }, request) => {
+            console.log("\n\n=======================================================");
+            console.log("🔒 SECURE PASSWORD RESET INITIATED");
+            console.log("Target Operator Email: ", user.email);
+            console.log("Recovery Link: ", url);
+            console.log("=======================================================\n\n");
+        },
     }
 });
 
