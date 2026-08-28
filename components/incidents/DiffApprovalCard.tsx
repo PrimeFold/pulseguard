@@ -1,8 +1,14 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { GitPullRequest, CheckCircle2, Loader2, ExternalLink, ShieldCheck } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useState } from "react";
+import {
+  GitPullRequest,
+  CheckCircle2,
+  Loader2,
+  ExternalLink,
+  ShieldCheck,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface DiffApprovalCardProps {
   organizationId: string;
@@ -19,19 +25,20 @@ export function DiffApprovalCard({
   patch,
   explanation,
 }: DiffApprovalCardProps) {
-    
-  const [status, setStatus] = useState<'idle' | 'submitting' | 'approved' | 'error'>('idle');
+  const [status, setStatus] = useState<
+    "idle" | "submitting" | "approved" | "error"
+  >("idle");
   const [prUrl, setPrUrl] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function handleApprove() {
     try {
-      setStatus('submitting');
+      setStatus("submitting");
       setErrorMessage(null);
 
-      const res = await fetch('/api/github/pr', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/github/pr", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           organizationId,
           incidentId,
@@ -43,14 +50,14 @@ export function DiffApprovalCard({
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to create PR');
+        throw new Error(data.error || "Failed to create PR");
       }
 
       setPrUrl(data.prUrl);
-      setStatus('approved');
+      setStatus("approved");
     } catch (err: any) {
       setErrorMessage(err.message);
-      setStatus('error');
+      setStatus("error");
     }
   }
 
@@ -60,7 +67,9 @@ export function DiffApprovalCard({
       <div className="flex items-center justify-between border-b border-border/40 pb-2">
         <div className="flex items-center gap-2">
           <ShieldCheck className="h-4 w-4 text-zinc-100" />
-          <span className="font-semibold text-zinc-100">Proposed Remediation Patch</span>
+          <span className="font-semibold text-zinc-100">
+            Proposed Remediation Patch
+          </span>
         </div>
         <span className="font-mono text-[11px] text-zinc-400 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">
           {filePath}
@@ -76,8 +85,10 @@ export function DiffApprovalCard({
       </div>
 
       {/* Error state if PR failed */}
-      {status === 'error' && (
-        <p className="text-red-400 text-[11px] font-mono">Error: {errorMessage}</p>
+      {status === "error" && (
+        <p className="text-red-400 text-[11px] font-mono">
+          Error: {errorMessage}
+        </p>
       )}
 
       {/* Action Area */}
@@ -86,7 +97,7 @@ export function DiffApprovalCard({
           Requires engineer approval to create GitHub PR
         </span>
 
-        {status === 'approved' && prUrl ? (
+        {status === "approved" && prUrl ? (
           <a
             href={prUrl}
             target="_blank"
@@ -100,10 +111,10 @@ export function DiffApprovalCard({
           <Button
             size="sm"
             onClick={handleApprove}
-            disabled={status === 'submitting'}
+            disabled={status === "submitting"}
             className="gap-1.5 bg-white hover:bg-zinc-200 text-black border border-transparent font-medium"
           >
-            {status === 'submitting' ? (
+            {status === "submitting" ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 Opening PR...

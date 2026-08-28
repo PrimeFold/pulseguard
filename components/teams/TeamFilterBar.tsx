@@ -1,10 +1,16 @@
-'use client';
+"use client";
 
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useTransition } from 'react';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Loader2 } from 'lucide-react';
+import { useRouter, useSearchParams } from "next/navigation";
+import { useTransition } from "react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Search, Loader2 } from "lucide-react";
 
 export function TeamFilterBar({ orgSlug }: { orgSlug: string }) {
   const router = useRouter();
@@ -13,12 +19,12 @@ export function TeamFilterBar({ orgSlug }: { orgSlug: string }) {
 
   function updateQuery(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
-    if (value && value !== 'ALL') {
+    if (value && value !== "ALL") {
       params.set(key, value);
     } else {
       params.delete(key);
     }
-    params.set('page', '1');
+    params.set("page", "1");
 
     startTransition(() => {
       router.push(`/${orgSlug}/settings/team?${params.toString()}`);
@@ -31,8 +37,8 @@ export function TeamFilterBar({ orgSlug }: { orgSlug: string }) {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
         <Input
           placeholder="Search by name or email..."
-          defaultValue={searchParams.get('q') || ''}
-          onChange={(e) => updateQuery('q', e.target.value)}
+          defaultValue={searchParams.get("q") || ""}
+          onChange={(e) => updateQuery("q", e.target.value)}
           className="pl-9 text-xs bg-zinc-950 border-zinc-800 text-zinc-200 h-9"
         />
         {isPending && (
@@ -41,8 +47,8 @@ export function TeamFilterBar({ orgSlug }: { orgSlug: string }) {
       </div>
 
       <Select
-        defaultValue={searchParams.get('role') || 'ALL'}
-        onValueChange={(val) => updateQuery('role', val as string)}
+        defaultValue={searchParams.get("role") || "ALL"}
+        onValueChange={(val) => updateQuery("role", val as string)}
       >
         <SelectTrigger className="w-full sm:w-[150px] text-xs bg-zinc-950 border-zinc-800 text-zinc-200 h-9">
           <SelectValue placeholder="All Roles" />

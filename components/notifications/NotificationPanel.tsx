@@ -49,18 +49,25 @@ export function NotificationPanel() {
     return () => clearInterval(interval);
   }, []);
 
-  useGSAP(() => {
-    gsap.set(panelRef.current, { autoAlpha: 0, y: -10, scale: 0.98, transformOrigin: "top right" });
-    
-    tl.current = gsap.timeline({ paused: true })
-      .to(panelRef.current, {
+  useGSAP(
+    () => {
+      gsap.set(panelRef.current, {
+        autoAlpha: 0,
+        y: -10,
+        scale: 0.98,
+        transformOrigin: "top right",
+      });
+
+      tl.current = gsap.timeline({ paused: true }).to(panelRef.current, {
         autoAlpha: 1,
         y: 0,
         scale: 1,
         duration: 0.25,
-        ease: "power2.out"
+        ease: "power2.out",
       });
-  }, { scope: panelRef });
+    },
+    { scope: panelRef },
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -78,7 +85,7 @@ export function NotificationPanel() {
       await fetch(`/api/invites/accept`, {
         method: "POST",
         body: JSON.stringify({ token }),
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
       });
       // Optionally route to dashboard
       window.location.href = "/workspaces";
@@ -122,13 +129,18 @@ export function NotificationPanel() {
             <div className="flex flex-col">
               {/* Invites */}
               {data.invites.map((inv) => (
-                <div key={inv.id} className="p-3 border-b border-zinc-800/50 hover:bg-zinc-950/50 transition-colors group">
+                <div
+                  key={inv.id}
+                  className="p-3 border-b border-zinc-800/50 hover:bg-zinc-950/50 transition-colors group"
+                >
                   <div className="flex items-start gap-3">
                     <div className="mt-0.5 p-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-none shrink-0">
                       <Sparkles className="h-3.5 w-3.5" />
                     </div>
                     <div className="flex-1 space-y-2">
-                      <p className="text-xs text-zinc-200 font-sans leading-relaxed">{inv.title}</p>
+                      <p className="text-xs text-zinc-200 font-sans leading-relaxed">
+                        {inv.title}
+                      </p>
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleInvite(inv.token, "accept")}
@@ -160,8 +172,12 @@ export function NotificationPanel() {
                       <ShieldAlert className="h-3.5 w-3.5" />
                     </div>
                     <div className="flex-1 space-y-1">
-                      <p className="text-xs text-zinc-200 font-sans leading-relaxed">{item.title}</p>
-                      <p className="text-[10px] font-mono text-zinc-500">Requires ADMIN review</p>
+                      <p className="text-xs text-zinc-200 font-sans leading-relaxed">
+                        {item.title}
+                      </p>
+                      <p className="text-[10px] font-mono text-zinc-500">
+                        Requires ADMIN review
+                      </p>
                     </div>
                   </div>
                 </a>

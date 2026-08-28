@@ -2,7 +2,7 @@ import { getOrganizationAndMembership } from "@/lib/tenant";
 import { AiProviderCard } from "@/components/settings/AiProviderCard";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Sparkles, Cpu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Props {
@@ -16,24 +16,24 @@ export default async function AiSettingsPage({ params }: Props) {
   const canManage = membership.role === "OWNER" || membership.role === "ADMIN";
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 space-y-6">
-      <div className="flex items-center justify-between pb-4 border-b border-border">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild className="h-7 px-2 -ml-2 text-xs text-muted-foreground hover:text-white">
-              <Link href={`/${orgSlug}/settings`}>
-                <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Settings
-              </Link>
-            </Button>
+    <div className="space-y-12">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-zinc-900">
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-3">
+            <Cpu className="h-6 w-6 text-purple-500" />
+            <h1 className="text-3xl font-mono tracking-tighter text-white uppercase">
+              AI Config
+            </h1>
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-white">AI Models & API Keys</h1>
-          <p className="text-sm text-muted-foreground">
-            Configure custom LLM providers and API keys for incident diagnosis, agent execution, and RAG embeddings.
+          <p className="text-[11px] font-mono text-zinc-500 tracking-widest uppercase">
+            SRE Engine / Providers / {org.name}
           </p>
         </div>
-        <Badge variant="outline" className="font-mono text-xs uppercase bg-zinc-950 text-muted-foreground border-border tracking-wider">
-          Role: {membership.role}
-        </Badge>
+
+        <div className="inline-flex items-center gap-2 px-3 py-1 bg-zinc-950 border border-zinc-900 text-zinc-500 font-mono text-[10px] uppercase tracking-widest">
+          Permission Level: <span className="text-white font-semibold">{membership.role}</span>
+        </div>
       </div>
 
       <AiProviderCard

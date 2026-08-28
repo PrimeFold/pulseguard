@@ -1,13 +1,24 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
-import { updateAiSettings, removeCustomAiKey, fetchLiveProviderModels } from "@/app/api/action/ai-settings";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import {
+  updateAiSettings,
+  removeCustomAiKey,
+  fetchLiveProviderModels,
+} from "@/app/api/action/ai-settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Sparkles, Key, CheckCircle2, Loader2, ShieldCheck, Trash2, RefreshCw, Globe, Radio } from "lucide-react";
+import {
+  Sparkles,
+  Key,
+  CheckCircle2,
+  Loader2,
+  ShieldCheck,
+  Trash2,
+  RefreshCw,
+  Globe,
+  Radio,
+} from "lucide-react";
 
 interface Props {
   organizationId: string;
@@ -23,7 +34,7 @@ const PROVIDERS = [
   { id: "openai", name: "OpenAI", keyPrefix: "sk-proj-..." },
   { id: "anthropic", name: "Anthropic Claude", keyPrefix: "sk-ant-..." },
   { id: "groq", name: "Groq (Llama / Mixtral)", keyPrefix: "gsk_..." },
-  { id: "openrouter", name: "OpenRouter (Multi-Model)", keyPrefix: "sk-or-..." },
+  { id: "openrouter", name: "OpenRouter", keyPrefix: "sk-or-..." },
 ];
 
 export function AiProviderCard({
@@ -36,23 +47,36 @@ export function AiProviderCard({
 }: Props) {
   const [provider, setProvider] = useState(initialProvider || "google");
   const [model, setModel] = useState(initialModel || "gemini-1.5-flash");
-  const [embeddingModel, setEmbeddingModel] = useState(initialEmbeddingModel || "text-embedding-004");
+  const [embeddingModel, setEmbeddingModel] = useState(
+    initialEmbeddingModel || "text-embedding-004",
+  );
   const [apiKey, setApiKey] = useState("");
-  const [apiKeyDisplay, setApiKeyDisplay] = useState<string | null>(initialApiKeyDisplay);
-  
-  // Live models fetched from provider public APIs
+  const [apiKeyDisplay, setApiKeyDisplay] = useState<string | null>(
+    initialApiKeyDisplay,
+  );
+
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [availableEmbeddings, setAvailableEmbeddings] = useState<string[]>([]);
-  const [modelsSource, setModelsSource] = useState<"live_api" | "fallback">("fallback");
+  const [modelsSource, setModelsSource] = useState<"live_api" | "fallback">(
+    "fallback",
+  );
   const [fetchingModels, setFetchingModels] = useState(false);
   const [customModelMode, setCustomModelMode] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
-  // Load models dynamically from provider APIs (uses Redis cache automatically)
-  const loadModels = async (selectedProvider: string, userKey?: string, forceRefresh = false) => {
+  const selectedP = PROVIDERS.find((p) => p.id === provider);
+
+  const loadModels = async (
+    selectedProvider: string,
+    userKey?: string,
+    forceRefresh = false,
+  ) => {
     setFetchingModels(true);
     try {
       const res = await fetchLiveProviderModels({
@@ -66,11 +90,17 @@ export function AiProviderCard({
       setAvailableEmbeddings(res.embeddingModels);
       setModelsSource(res.source);
 
-      // If the current model isn't in the fetched list, default to the first one unless it was user-typed
-      if (!res.textModels.includes(model) && res.textModels.length > 0 && !customModelMode) {
+      if (
+        !res.textModels.includes(model) &&
+        res.textModels.length > 0 &&
+        !customModelMode
+      ) {
         setModel(res.textModels[0]);
       }
-      if (!res.embeddingModels.includes(embeddingModel) && res.embeddingModels.length > 0) {
+      if (
+        !res.embeddingModels.includes(embeddingModel) &&
+        res.embeddingModels.length > 0
+      ) {
         setEmbeddingModel(res.embeddingModels[0]);
       }
     } catch {
@@ -100,252 +130,274 @@ export function AiProviderCard({
         provider,
         model,
         embeddingModel,
-        apiKey: apiKey.trim() || undefined,
+        apiKey: apiKey || undefined,
       });
 
-      if (res.success) {
-        if (res.apiKeyDisplay) {
-          setApiKeyDisplay(res.apiKeyDisplay);
-        }
+      if (!res.success) throw new Error(res.error);
+
+      if (res.apiKeyDisplay) {
+        setApiKeyDisplay(res.apiKeyDisplay);
         setApiKey("");
-        setMessage({ type: "success", text: "AI provider and model configuration saved." });
-        // Re-fetch with saved key
-        loadModels(provider);
+      }
+      setMessage({ type: "success", text: "AI configuration saved." });
+
+      if (apiKey) {
+        loadModels(provider, apiKey, true);
       }
     } catch (err: any) {
-      setMessage({ type: "error", text: err.message || "Failed to update AI settings." });
+      setMessage({ type: "error", text: err.message || "Save failed." });
     } finally {
       setLoading(false);
     }
   };
 
   const handleRemoveKey = async () => {
+    if (!confirm("Remove the custom API key for this organization?")) return;
     setDeleting(true);
-    setMessage(null);
-
     try {
-      await removeCustomAiKey(organizationId);
+      await removeCustomAiKey({ organizationId });
       setApiKeyDisplay(null);
-      setApiKey("");
-      setMessage({ type: "success", text: "Custom API key removed. Reverted to system defaults." });
-      loadModels(provider);
+      setMessage({
+        type: "success",
+        text: "API key removed. Reverting to default.",
+      });
+      loadModels(provider, "", true);
     } catch (err: any) {
-      setMessage({ type: "error", text: err.message || "Failed to remove key." });
+      setMessage({
+        type: "error",
+        text: err.message || "Failed to remove key.",
+      });
     } finally {
       setDeleting(false);
     }
   };
 
-  const currentProviderInfo = PROVIDERS.find((p) => p.id === provider) || PROVIDERS[0];
-
   return (
-    <Card className="bg-black border-border shadow-none">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-lg bg-zinc-900 border border-border flex items-center justify-center">
-              <Sparkles className="h-4 w-4 text-zinc-100" />
-            </div>
-            <div>
-              <CardTitle className="text-base text-zinc-100">AI Model & Provider Configuration</CardTitle>
-              <CardDescription className="text-xs text-muted-foreground">
-                Fetches live models dynamically from official provider APIs.
-              </CardDescription>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {modelsSource === "live_api" ? (
-              <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 gap-1 text-[11px] font-mono">
-                <Globe className="h-3 w-3" /> Live Provider API
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="border-border bg-zinc-950 text-muted-foreground text-[11px] gap-1 font-mono">
-                <Radio className="h-3 w-3 text-zinc-500" /> Cached Defaults
-              </Badge>
-            )}
-            {apiKeyDisplay && (
-              <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400 gap-1 text-[11px] font-mono">
-                <CheckCircle2 className="h-3 w-3" /> Custom Key
-              </Badge>
-            )}
-          </div>
+    <div className="border border-zinc-900 bg-black overflow-hidden relative">
+      <div className="p-6 border-b border-zinc-900 bg-zinc-950/50">
+        <div className="flex items-center gap-3 mb-2">
+          <Sparkles className="h-5 w-5 text-purple-500" />
+          <h2 className="text-sm font-mono font-semibold tracking-widest text-white uppercase">
+            Model Configuration
+          </h2>
         </div>
-      </CardHeader>
+        <p className="text-[11px] font-mono text-zinc-500 leading-relaxed">
+          Select inference engines. Bring your own API key to bypass rate
+          limits.
+        </p>
+      </div>
 
-      <form onSubmit={handleSave}>
-        <CardContent className="space-y-5">
-          {/* Provider Selection */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-zinc-300">AI Provider</label>
-              <Select value={provider} onValueChange={(val) => handleProviderChange(val || "google")} disabled={!canManage}>
-                <SelectTrigger className="bg-zinc-950 border-border text-xs text-zinc-100">
-                  <SelectValue placeholder="Select Provider" />
-                </SelectTrigger>
-                <SelectContent className="bg-zinc-950 border-border text-zinc-100">
-                  {PROVIDERS.map((item) => (
-                    <SelectItem key={item.id} value={item.id} className="text-xs">
-                      {item.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Model Selection / Input */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-zinc-300">Text & SRE Agent Model</label>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => loadModels(provider, undefined, true)}
-                    disabled={fetchingModels}
-                    className="text-[11px] text-muted-foreground hover:text-white flex items-center gap-1 transition-colors"
+      <form onSubmit={handleSave} className="divide-y divide-zinc-900/50">
+        {/* Provider Selection */}
+        <div className="p-6 space-y-4">
+          <label className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">
+            LLM Provider
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {PROVIDERS.map((p) => {
+              const isSelected = provider === p.id;
+              return (
+                <div
+                  key={p.id}
+                  onClick={() => canManage && handleProviderChange(p.id)}
+                  className={`
+                    p-3 border transition-colors cursor-pointer flex items-center justify-between group
+                    ${!canManage ? "opacity-50 cursor-not-allowed" : "active:scale-[0.98]"}
+                    ${
+                      isSelected
+                        ? "bg-zinc-900 border-zinc-700"
+                        : "bg-black border-zinc-900 hover:border-zinc-700"
+                    }
+                  `}
+                >
+                  <span
+                    className={`text-[11px] font-mono font-medium ${isSelected ? "text-white" : "text-zinc-500 group-hover:text-zinc-300"}`}
                   >
-                    <RefreshCw className={`h-3 w-3 ${fetchingModels ? "animate-spin" : ""}`} /> Refresh Live Models
-                  </button>
-                  <span className="text-zinc-700">|</span>
-                  <button
-                    type="button"
-                    onClick={() => setCustomModelMode(!customModelMode)}
-                    className="text-[11px] text-muted-foreground hover:text-white transition-colors"
-                  >
-                    {customModelMode ? "Choose from list" : "Type custom"}
-                  </button>
-                </div>
-              </div>
-
-              {customModelMode ? (
-                <Input
-                  value={model}
-                  onChange={(e) => setModel(e.target.value)}
-                  placeholder="e.g. gpt-4o-2024-11-20 or gemini-2.0-flash"
-                  disabled={!canManage}
-                  className="bg-zinc-950 border-border text-zinc-100 text-xs font-mono focus-visible:ring-1 focus-visible:ring-zinc-700"
-                />
-              ) : (
-                <Select value={model} onValueChange={(val) => setModel(val || model)} disabled={!canManage || fetchingModels}>
-                  <SelectTrigger className="bg-zinc-950 border-border text-xs text-zinc-100 font-mono">
-                    <SelectValue placeholder={fetchingModels ? "Fetching live models..." : "Select Model"} />
-                  </SelectTrigger>
-                  <SelectContent className="bg-zinc-950 border-border text-zinc-100 max-h-64">
-                    {availableModels.map((m) => (
-                      <SelectItem key={m} value={m} className="text-xs font-mono">
-                        {m}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-          </div>
-
-          {/* Embedding Model */}
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-zinc-300">Embedding Model (Knowledge Base & RAG)</label>
-            {availableEmbeddings.length > 0 && !customModelMode ? (
-              <Select value={embeddingModel} onValueChange={(val) => setEmbeddingModel(val || embeddingModel)} disabled={!canManage}>
-                <SelectTrigger className="bg-zinc-950 border-border text-xs text-zinc-100 font-mono">
-                  <SelectValue placeholder="Select Embedding Model" />
-                </SelectTrigger>
-                <SelectContent className="bg-zinc-950 border-border text-zinc-100">
-                  {availableEmbeddings.map((emb) => (
-                    <SelectItem key={emb} value={emb} className="text-xs font-mono">
-                      {emb}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <Input
-                value={embeddingModel}
-                onChange={(e) => setEmbeddingModel(e.target.value)}
-                placeholder="e.g. text-embedding-004 or text-embedding-3-small"
-                disabled={!canManage}
-                className="bg-zinc-950 border-border text-zinc-100 text-xs font-mono focus-visible:ring-1 focus-visible:ring-zinc-700"
-              />
-            )}
-            <p className="text-[11px] text-muted-foreground">
-              Embeddings convert internal runbooks and documentation into mathematical vectors in pgvector.
-            </p>
-          </div>
-
-          {/* API Key Section */}
-          <div className="space-y-3 pt-2 border-t border-border">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-medium text-zinc-300 flex items-center gap-1.5">
-                <Key className="h-3.5 w-3.5 text-zinc-400" /> {currentProviderInfo.name} API Key
-              </label>
-              {apiKeyDisplay && (
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-zinc-900 border border-border text-zinc-300">
-                    {apiKeyDisplay}
+                    {p.name}
                   </span>
-                  {canManage && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleRemoveKey}
-                      disabled={deleting}
-                      className="h-6 px-2 text-[11px] text-red-400 hover:text-red-300 hover:bg-red-950/20"
-                    >
-                      {deleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                    </Button>
+                  {isSelected && (
+                    <CheckCircle2 className="h-4 w-4 text-white" />
                   )}
                 </div>
-              )}
-            </div>
+              );
+            })}
+          </div>
+        </div>
 
-            <div className="flex gap-2">
-              <Input
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder={apiKeyDisplay ? "Enter new API key to overwrite..." : `Paste your ${currentProviderInfo.name} API key (${currentProviderInfo.keyPrefix})`}
-                disabled={!canManage}
-                className="bg-zinc-950 border-border text-zinc-100 text-xs font-mono focus-visible:ring-1 focus-visible:ring-zinc-700"
-              />
-              {apiKey && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => loadModels(provider, apiKey)}
-                  disabled={fetchingModels}
-                  className="shrink-0 text-xs border-border bg-zinc-950 text-zinc-200 hover:bg-zinc-900"
-                >
-                  {fetchingModels ? <Loader2 className="h-3 w-3 animate-spin" /> : "Fetch Models with Key"}
-                </Button>
-              )}
-            </div>
-            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <ShieldCheck className="h-3.5 w-3.5 text-zinc-400" />
-              <span>Keys are encrypted with AES-256. Only the first 4 and last 4 characters are ever displayed in the UI.</span>
-            </div>
+        {/* API Key Connection */}
+        <div className="p-6 space-y-4 bg-zinc-950/30">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <label className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 flex items-center gap-2">
+              <Key className="h-3.5 w-3.5" /> Provider API Key
+            </label>
+            {apiKeyDisplay && (
+              <div className="flex items-center gap-2 px-2 py-1 bg-emerald-500/10 border border-emerald-500/20">
+                <ShieldCheck className="h-3 w-3 text-emerald-500" />
+                <span className="text-[9px] font-mono text-emerald-400 uppercase tracking-widest">
+                  Key Connected: {apiKeyDisplay}
+                </span>
+              </div>
+            )}
           </div>
 
-          {message && (
-            <p className={`text-xs font-medium ${message.type === "success" ? "text-emerald-500" : "text-red-500"}`}>
-              {message.text}
-            </p>
-          )}
-        </CardContent>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Input
+              type="password"
+              placeholder={selectedP?.keyPrefix || "Enter API Key"}
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              disabled={!canManage}
+              className="bg-black border-zinc-900 text-zinc-100 font-mono text-xs h-10 rounded-none placeholder:text-zinc-700 focus-visible:ring-1 focus-visible:ring-zinc-700 flex-1"
+            />
+            {canManage && apiKeyDisplay && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleRemoveKey}
+                disabled={deleting}
+                className="bg-transparent hover:bg-red-950/30 text-zinc-400 hover:text-red-400 border border-zinc-800 hover:border-red-900/50 rounded-none h-10 font-mono text-[10px] uppercase tracking-widest px-4 transition-all"
+              >
+                {deleting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="h-3.5 w-3.5 mr-2" />
+                )}
+                Revoke
+              </Button>
+            )}
+          </div>
+          <p className="text-[10px] font-mono text-zinc-600">
+            Keys are symmetrically encrypted via AES-256-GCM before DB
+            insertion.
+          </p>
+        </div>
 
-        {canManage && (
-          <CardFooter className="border-t border-border pt-4 flex justify-end">
+        {/* Models Config */}
+        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8 bg-black">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">
+                Text / Reasoning Model
+              </label>
+              {fetchingModels && (
+                <Loader2 className="h-3 w-3 animate-spin text-zinc-600" />
+              )}
+            </div>
+
+            {customModelMode ? (
+              <Input
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                disabled={!canManage}
+                placeholder="e.g. gpt-4o"
+                className="bg-zinc-950 border-zinc-900 text-zinc-300 font-mono text-[11px] h-10 rounded-none focus-visible:ring-1 focus-visible:ring-zinc-700"
+              />
+            ) : (
+              <select
+                value={model}
+                onChange={(e) => {
+                  if (e.target.value === "custom_input")
+                    setCustomModelMode(true);
+                  else setModel(e.target.value);
+                }}
+                disabled={!canManage || fetchingModels}
+                className="w-full bg-zinc-950 border border-zinc-900 text-zinc-300 font-mono text-[11px] h-10 px-3 rounded-none focus:outline-none appearance-none"
+              >
+                {availableModels.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+                {!availableModels.includes(model) && (
+                  <option value={model}>{model} (Current)</option>
+                )}
+                <option value="custom_input">-- Enter Custom ID --</option>
+              </select>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <label className="text-[10px] font-mono uppercase tracking-widest text-zinc-400">
+              Vector Embedding Model
+            </label>
+            <select
+              value={embeddingModel}
+              onChange={(e) => setEmbeddingModel(e.target.value)}
+              disabled={!canManage || fetchingModels}
+              className="w-full bg-zinc-950 border border-zinc-900 text-zinc-300 font-mono text-[11px] h-10 px-3 rounded-none focus:outline-none appearance-none"
+            >
+              {availableEmbeddings.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+              {!availableEmbeddings.includes(embeddingModel) && (
+                <option value={embeddingModel}>
+                  {embeddingModel} (Current)
+                </option>
+              )}
+            </select>
+          </div>
+        </div>
+
+        {/* Messaging */}
+        {message && (
+          <div
+            className={`p-4 border-b font-mono text-[10px] uppercase tracking-widest flex items-center gap-2 ${
+              message.type === "success"
+                ? "bg-emerald-950/20 text-emerald-400 border-emerald-900/40"
+                : "bg-red-950/20 text-red-400 border-red-900/40"
+            }`}
+          >
+            <Radio className="h-3 w-3 animate-pulse" /> {message.text}
+          </div>
+        )}
+
+        {/* Footer Actions */}
+        <div className="p-4 bg-zinc-950/80 border-t border-zinc-900 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-zinc-900 border border-zinc-800 self-start">
+            {modelsSource === "live_api" ? (
+              <>
+                <Globe className="h-3 w-3 text-blue-400" />
+                <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-widest">
+                  LIVE API LIST
+                </span>
+              </>
+            ) : (
+              <>
+                <Radio className="h-3 w-3 text-zinc-500" />
+                <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">
+                  FALLBACK LIST
+                </span>
+              </>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => loadModels(provider, undefined, true)}
+              disabled={fetchingModels || !canManage}
+              className="bg-transparent hover:bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800 rounded-none h-8 font-mono text-[10px] uppercase tracking-widest px-3 active:scale-[0.98]"
+            >
+              <RefreshCw
+                className={`h-3 w-3 mr-2 ${fetchingModels ? "animate-spin" : ""}`}
+              />
+              SYNC
+            </Button>
             <Button
               type="submit"
-              disabled={loading}
-              className="bg-white hover:bg-zinc-200 text-black border border-transparent font-medium text-xs gap-1.5"
+              disabled={loading || !canManage}
+              className="bg-white hover:bg-zinc-200 text-black border border-transparent font-mono text-[10px] font-bold tracking-widest uppercase rounded-none h-8 px-4 transition-all duration-300 active:scale-[0.98] cursor-pointer"
             >
-              {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              Save AI Configuration
+              {loading && <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />}
+              SAVE CONFIG
             </Button>
-          </CardFooter>
-        )}
+          </div>
+        </div>
       </form>
-    </Card>
+    </div>
   );
 }

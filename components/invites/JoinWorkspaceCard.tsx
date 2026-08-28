@@ -1,11 +1,17 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Loader2, ArrowRight } from 'lucide-react';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Loader2, ArrowRight } from "lucide-react";
 
-export function JoinWorkspaceCard({ token, orgName }: { token: string; orgName: string }) {
+export function JoinWorkspaceCard({
+  token,
+  orgName,
+}: {
+  token: string;
+  orgName: string;
+}) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -15,16 +21,16 @@ export function JoinWorkspaceCard({ token, orgName }: { token: string; orgName: 
       setLoading(true);
       setError(null);
 
-      const res = await fetch('/api/invites/accept', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/invites/accept", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token }),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to join workspace');
+      if (!res.ok) throw new Error(data.error || "Failed to join workspace");
 
-      router.push('/dashboard');
+      router.push("/dashboard");
       router.refresh();
     } catch (err: any) {
       setError(err.message);

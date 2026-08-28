@@ -4,6 +4,8 @@ import { GitHubIntegrationCard } from '@/components/settings/GithubIntegrationCa
 import { ApiKeyCard } from '@/components/settings/ApiKeyCard';
 import { UserProfileForm } from '@/components/settings/UserProfileForm';
 import { AiProviderCard } from '@/components/settings/AiProviderCard';
+import { WorkspaceSettingsCard } from '@/components/settings/WorkspaceSettingsCard';
+import { Settings } from 'lucide-react';
 
 interface Props {
   params: Promise<{ orgSlug: string }>;
@@ -15,6 +17,7 @@ export default async function SettingsPage({ params }: Props) {
 
   const role = membership.role;
   const canManage = role === 'OWNER' || role === 'ADMIN';
+  const isOwner = role === 'OWNER';
 
   const githubRepo =
     organization.githubOwner && organization.githubDefaultRepo
@@ -22,20 +25,35 @@ export default async function SettingsPage({ params }: Props) {
       : null;
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 space-y-6">
-      <div className="flex items-center justify-between pb-4 border-b border-border">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-white">Settings</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Configure workspace integrations, custom AI models, and your personal profile.
+    <div className="space-y-12">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-zinc-900">
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-3">
+            <Settings className="h-6 w-6 text-purple-500" />
+            <h1 className="text-3xl font-mono tracking-tighter text-white uppercase">
+              Global Settings
+            </h1>
+          </div>
+          <p className="text-[11px] font-mono text-zinc-500 tracking-widest uppercase">
+            Workspace Configuration / Integrations / Security
           </p>
         </div>
-        <Badge variant="outline" className="font-mono text-xs uppercase bg-zinc-950 text-muted-foreground border-border tracking-wider">
-          Role: {role}
-        </Badge>
+
+        <div className="inline-flex items-center gap-2 px-3 py-1 bg-zinc-950 border border-zinc-900 text-zinc-500 font-mono text-[10px] uppercase tracking-widest">
+          Permission Level: <span className="text-white font-semibold">{role}</span>
+        </div>
       </div>
 
       <div className="grid gap-6">
+        <WorkspaceSettingsCard
+          organizationId={organization.id}
+          initialName={organization.name}
+          initialSlug={organization.slug}
+          canManage={canManage}
+          isOwner={isOwner}
+        />
+
         <UserProfileForm user={{ id: user.id, name: user.name || "", email: user.email }} />
 
         <AiProviderCard

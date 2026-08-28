@@ -2,7 +2,9 @@
 
 import dynamic from "next/dynamic";
 
-const AcidSquares = dynamic(() => import("@/components/AcidSquares"), { ssr: false });
+const AcidSquares = dynamic(() => import("@/components/AcidSquares"), {
+  ssr: false,
+});
 
 export function LandingBackground() {
   return (

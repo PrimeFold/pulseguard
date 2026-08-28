@@ -2,15 +2,29 @@
 
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+  CardFooter,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, User } from "lucide-react";
 
-export function UserProfileForm({ user }: { user: { id: string; name: string; email: string } }) {
+export function UserProfileForm({
+  user,
+}: {
+  user: { id: string; name: string; email: string };
+}) {
   const [name, setName] = useState(user.name || "");
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +37,10 @@ export function UserProfileForm({ user }: { user: { id: string; name: string; em
       });
 
       if (error) {
-        setMessage({ type: "error", text: error.message || "Failed to update profile." });
+        setMessage({
+          type: "error",
+          text: error.message || "Failed to update profile.",
+        });
       } else {
         setMessage({ type: "success", text: "Profile updated successfully." });
       }
@@ -78,11 +95,13 @@ export function UserProfileForm({ user }: { user: { id: string; name: string; em
           </div>
 
           {message && (
-            <div className={`p-2 border font-mono text-[10px] uppercase rounded-none ${
-              message.type === "success" 
-                ? "bg-emerald-950/20 border-emerald-900/40 text-emerald-400" 
-                : "bg-red-950/20 border-red-900/40 text-red-400"
-            }`}>
+            <div
+              className={`p-2 border font-mono text-[10px] uppercase rounded-none ${
+                message.type === "success"
+                  ? "bg-emerald-950/20 border-emerald-900/40 text-emerald-400"
+                  : "bg-red-950/20 border-red-900/40 text-red-400"
+              }`}
+            >
               {message.text}
             </div>
           )}

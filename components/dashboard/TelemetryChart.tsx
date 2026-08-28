@@ -1,8 +1,19 @@
-'use client';
+"use client";
 
-import { Area, AreaChart, XAxis, YAxis } from 'recharts';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { Area, AreaChart, XAxis, YAxis } from "recharts";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 
 interface TelemetryPoint {
   time: string;
@@ -17,16 +28,16 @@ interface TelemetryChartProps {
 
 const chartConfig = {
   errors: {
-    label: 'Errors & Fatal',
-    color: 'hsl(0, 84%, 60%)', // Red
+    label: "Errors & Fatal",
+    color: "hsl(0, 84%, 60%)", // Red
   },
   warnings: {
-    label: 'Warnings',
-    color: 'hsl(38, 92%, 50%)', // Amber
+    label: "Warnings",
+    color: "hsl(38, 92%, 50%)", // Amber
   },
   info: {
-    label: 'Info / Normal',
-    color: 'hsl(263, 70%, 50%)', // Purple
+    label: "Info / Normal",
+    color: "hsl(263, 70%, 50%)", // Purple
   },
 } satisfies ChartConfig;
 
@@ -36,7 +47,9 @@ export function TelemetryChart({ data }: TelemetryChartProps) {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-sm font-semibold tracking-tight">Telemetry Ingestion & Error Volume</CardTitle>
+            <CardTitle className="text-sm font-semibold tracking-tight">
+              Telemetry Ingestion & Error Volume
+            </CardTitle>
             <CardDescription className="text-xs text-zinc-400">
               Log distributions across all connected services (Last 24 hours)
             </CardDescription>
@@ -56,7 +69,10 @@ export function TelemetryChart({ data }: TelemetryChartProps) {
       </CardHeader>
       <CardContent className="pt-4">
         <ChartContainer config={chartConfig} className="h-65 w-full">
-          <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <AreaChart
+            data={data}
+            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+          >
             <defs>
               <linearGradient id="fillErrors" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4} />

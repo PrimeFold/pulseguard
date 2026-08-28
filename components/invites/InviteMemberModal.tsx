@@ -1,23 +1,37 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { UserPlus, Copy, Check, Loader2, Link as LinkIcon } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
-import { Label } from '../ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { UserPlus, Copy, Check, Loader2, Link as LinkIcon } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../ui/dialog";
+import { Label } from "../ui/label";
 
 interface InviteMemberDialogProps {
   organizationId: string;
 }
 
-export function InviteMemberDialog({ organizationId }: InviteMemberDialogProps) {
+export function InviteMemberDialog({
+  organizationId,
+}: InviteMemberDialogProps) {
   const [open, setOpen] = useState(false);
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState<'MEMBER' | 'ADMIN' | 'VIEWER'>('MEMBER');
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState<"MEMBER" | "ADMIN" | "VIEWER">("MEMBER");
   const [loading, setLoading] = useState(false);
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -28,9 +42,9 @@ export function InviteMemberDialog({ organizationId }: InviteMemberDialogProps) 
       setLoading(true);
       setError(null);
 
-      const res = await fetch('/api/invites', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/invites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           organizationId,
           role,
@@ -39,7 +53,7 @@ export function InviteMemberDialog({ organizationId }: InviteMemberDialogProps) 
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to generate invite');
+      if (!res.ok) throw new Error(data.error || "Failed to generate invite");
 
       setInviteUrl(data.inviteUrl);
     } catch (err: any) {
@@ -60,7 +74,7 @@ export function InviteMemberDialog({ organizationId }: InviteMemberDialogProps) 
     setOpen(isOpen);
     if (!isOpen) {
       setInviteUrl(null);
-      setEmail('');
+      setEmail("");
       setError(null);
       setCopied(false);
     }
@@ -69,19 +83,26 @@ export function InviteMemberDialog({ organizationId }: InviteMemberDialogProps) 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogTrigger asChild>
-        <Button size="sm" className="gap-2 bg-purple-600 hover:bg-purple-500 text-white text-xs">
+        <Button
+          size="sm"
+          className="gap-2 bg-purple-600 hover:bg-purple-500 text-white text-xs"
+        >
           <UserPlus className="h-3.5 w-3.5" /> Invite Member
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-zinc-100">
         <DialogHeader>
-          <DialogTitle className="text-base font-semibold">Invite Team Member</DialogTitle>
+          <DialogTitle className="text-base font-semibold">
+            Invite Team Member
+          </DialogTitle>
         </DialogHeader>
 
         {!inviteUrl ? (
           <div className="space-y-4 pt-2">
             <div className="space-y-1.5">
-              <Label className="text-xs text-zinc-400">Restricted Email (Optional)</Label>
+              <Label className="text-xs text-zinc-400">
+                Restricted Email (Optional)
+              </Label>
               <Input
                 placeholder="developer@company.com"
                 value={email}
@@ -100,23 +121,29 @@ export function InviteMemberDialog({ organizationId }: InviteMemberDialogProps) 
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
-                  <SelectItem value="MEMBER">Member (Full SRE & War Room Access)</SelectItem>
-                  <SelectItem value="ADMIN">Admin (Manage Team & Settings)</SelectItem>
+                  <SelectItem value="MEMBER">
+                    Member (Full SRE & War Room Access)
+                  </SelectItem>
+                  <SelectItem value="ADMIN">
+                    Admin (Manage Team & Settings)
+                  </SelectItem>
                   <SelectItem value="VIEWER">Viewer (Read Only)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {error && (
-              <p className="text-xs text-red-400 font-mono">{error}</p>
-            )}
+            {error && <p className="text-xs text-red-400 font-mono">{error}</p>}
 
             <Button
               onClick={handleGenerate}
               disabled={loading}
               className="w-full bg-purple-600 hover:bg-purple-500 text-white text-xs gap-2"
             >
-              {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LinkIcon className="h-3.5 w-3.5" />}
+              {loading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <LinkIcon className="h-3.5 w-3.5" />
+              )}
               Generate Invite Link
             </Button>
           </div>
@@ -132,8 +159,16 @@ export function InviteMemberDialog({ organizationId }: InviteMemberDialogProps) 
                 value={inviteUrl}
                 className="bg-zinc-900 border-zinc-800 text-xs font-mono select-all"
               />
-              <Button size="sm" onClick={handleCopy} className="bg-zinc-800 hover:bg-zinc-700 shrink-0">
-                {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+              <Button
+                size="sm"
+                onClick={handleCopy}
+                className="bg-zinc-800 hover:bg-zinc-700 shrink-0"
+              >
+                {copied ? (
+                  <Check className="h-3.5 w-3.5 text-emerald-400" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
               </Button>
             </div>
 

@@ -53,19 +53,22 @@ const FEATURES = [
 export function AnimatedBentoCards() {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useGSAP(() => {
-    gsap.from(".bento-card", {
-      opacity: 0,
-      y: 12,
-      stagger: 0.05,
-      duration: 0.5,
-      ease: "power2.out",
-      scrollTrigger: {
-        trigger: containerRef.current,
-        start: "top 85%",
-      }
-    });
-  }, { scope: containerRef });
+  useGSAP(
+    () => {
+      gsap.from(".bento-card", {
+        opacity: 0,
+        y: 12,
+        stagger: 0.05,
+        duration: 0.5,
+        ease: "power2.out",
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top 85%",
+        },
+      });
+    },
+    { scope: containerRef },
+  );
 
   return (
     <div ref={containerRef} className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -77,8 +80,12 @@ export function AnimatedBentoCards() {
           <div className="h-7 w-7 bg-zinc-900 border border-zinc-800 flex items-center justify-center rounded-none group-hover:border-zinc-700 transition-colors">
             <feature.icon className={`h-3.5 w-3.5 ${feature.color}`} />
           </div>
-          <h3 className="text-xs font-semibold font-mono text-white tracking-tight">{feature.title}</h3>
-          <p className="text-[11px] text-zinc-400 font-sans leading-relaxed">{feature.desc}</p>
+          <h3 className="text-xs font-semibold font-mono text-white tracking-tight">
+            {feature.title}
+          </h3>
+          <p className="text-[11px] text-zinc-400 font-sans leading-relaxed">
+            {feature.desc}
+          </p>
           <div className="pt-2 font-mono text-[10px] text-zinc-600 border-t border-zinc-900 group-hover:text-zinc-500 transition-colors">
             {feature.module}
           </div>
