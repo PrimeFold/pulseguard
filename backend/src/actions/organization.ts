@@ -43,7 +43,7 @@ export async function updateOrganization(data: { id: string; name: string }) {
   // Verify membership & permissions
   const membership = await prisma.organizationMember.findUnique({
     where: {
-      organizationId_userId: {
+      userId_organizationId: {
         organizationId: data.id,
         userId: user.id,
       }
@@ -70,7 +70,7 @@ export async function deleteOrganization(data: { id: string }) {
 
   const membership = await prisma.organizationMember.findUnique({
     where: {
-      organizationId_userId: {
+      userId_organizationId: {
         organizationId: data.id,
         userId: user.id,
       }

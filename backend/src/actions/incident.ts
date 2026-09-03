@@ -133,41 +133,32 @@ async function generateRca({
       model: resolvedModel as any,
       prompt: `
             You're an expert at analysing errors , issues , exceptions on frontend & backend systems of a web-application.
-            An 'incident' is the information about the issues that happened in the application in a particular organistion ( team ).
-            Your Job is to prepare a Neat , Accurate and working solution for the incident , Titled 'Root cause analysis' aka RCA.
-            The incident information goes like this : 
+            Given this context, identify the core root cause of this incident and explain it clearly in a succinct 2-4 sentences summary:
 
-            ------------------
-            The ${title}
-            ------------------
-            Organisation-id : ${organizationId}
-            Incident-id:${incidentId}
-            Service : ${service}
-            Severity : ${severity}
-            Error-payload : ${JSON.stringify(errorPayload, null, 2)}
-
-            ---------------------------------------
-            Also mention important nuances , caveats and trade-offs for this solution. - (IF EXISTS)
-
+            Incident Message: ${incident.message}
+            Stack Trace: ${incident.stackTrace || 'None'}
+            Trigger Context: ${incident.triggerContext || 'None'}
+            Component/Service: ${incident.service || 'Unknown'}
+            Level: ${incident.level}
         `,
       maxRetries: 2,
     });
 
-    if (!output.trim()) {
+    if (!text.trim()) {
       throw new Error("failed to generate RCA");
     }
 
     const resolveResponse = await resolveIncidentAndEmbedRCA({
       incidentId,
-      rootCauseAnalysis: output,
+      rootCauseAnalysis: text,
       organizationId,
     });
     if (!resolveResponse.success || !resolveResponse.incidentId?.trim()) {
-      throw new Error(`${resolveResponse.message}`);
+      throw new Error(resolveResponse.message);
     }
     return {
       success: true,
-      output,
+      output: text,
       message: resolveResponse.message,
     };
   } catch (error) {

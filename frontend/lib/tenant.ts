@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
-import { getUser } from "./session";
-import { prisma } from "./auth";
-import { redis } from "./redis";
+import { getUser } from "@/lib/session";
+import { prisma } from "@/lib/auth";
+import { redis } from "@/lib/redis";
 import { cache } from "react";
 
 export const getOrganizationAndMembership = cache(async (slug: string) => {

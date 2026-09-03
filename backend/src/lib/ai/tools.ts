@@ -13,7 +13,7 @@ export function createIncidentTools(organizationId: string) {
     search_knowledge_base: tool({
       description:
         "Search the organization's parsed runbooks and troubleshooting documentation for matching error mitigation steps.",
-      inputSchema: z.object({
+      parameters: z.object({
         query: z
           .string()
           .describe(
@@ -38,7 +38,7 @@ export function createIncidentTools(organizationId: string) {
     query_telemetry_logs: tool({
       description:
         "Query structured error logs and telemetry around an incident timeframe to identify stack traces and failure causes.",
-      inputSchema: z.object({
+      parameters: z.object({
         service: z
           .string()
           .optional()
@@ -93,7 +93,7 @@ export function createIncidentTools(organizationId: string) {
     fetch_repo_file: tool({
       description:
         "Fetch the source code of a specific file from the connected repository.",
-      inputSchema: z.object({
+      parameters: z.object({
         filePath: z
           .string()
           .describe('Relative path to the file, e.g. "src/lib/db.ts"'),
@@ -145,7 +145,7 @@ export function createIncidentTools(organizationId: string) {
     propose_hotfix: tool({
       description:
         "Propose a code fix and PR structure for human review before creating the GitHub PR.",
-      inputSchema: z.object({
+      parameters: z.object({
         filePath: z.string().describe("Target file path"),
         originalSnippet: z.string().describe("The broken code lines"),
         updatedContent: z
