@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
-import { maskApiKey, encryptApiKey, decryptApiKey, getOrgLanguageModel, getOrgEmbeddingModel } from "@/lib/ai/provider";
+import {
+  maskApiKey,
+  encryptApiKey,
+  decryptApiKey,
+  getOrgLanguageModel,
+  getOrgEmbeddingModel,
+} from "@/lib/ai/provider";
 import { prisma } from "@/lib/auth";
 
 // Mock Prisma
@@ -73,12 +79,12 @@ describe("AI Credentials & Dynamic Model Provider", () => {
   });
 
   describe("Dynamic Embedding Model Resolution", () => {
-    it("should resolve to default text-embedding-004 model", async () => {
+    it("should resolve to default gemini-embedding-001 model", async () => {
       vi.mocked(prisma.organization.findUnique as any).mockResolvedValue(null);
 
       const model = await getOrgEmbeddingModel("non-existent-org");
       expect(model).toBeDefined();
-      expect(model.modelId).toBe("text-embedding-004");
+      expect(model.modelId).toBe("gemini-embedding-001");
     });
 
     it("should resolve to custom embedding model name", async () => {

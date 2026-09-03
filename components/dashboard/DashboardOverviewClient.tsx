@@ -37,11 +37,14 @@ export function DashboardOverviewClient({
 
   useGSAP(
     () => {
-      gsap.fromTo(
-        ".grid-section",
-        { opacity: 0, y: 15 },
-        { opacity: 1, y: 0, duration: 0.4, stagger: 0.08, ease: "power2.out" },
-      );
+      gsap.from(".grid-section", {
+        opacity: 0,
+        y: 10,
+        duration: 0.35,
+        stagger: 0.05,
+        ease: "power2.out",
+        clearProps: "all",
+      });
     },
     { scope: containerRef },
   );
@@ -154,7 +157,10 @@ export function DashboardOverviewClient({
                         <span>/</span>
                         <span>{incident.status}</span>
                         <span>/</span>
-                        <span className="flex items-center gap-1" suppressHydrationWarning>
+                        <span
+                          className="flex items-center gap-1"
+                          suppressHydrationWarning
+                        >
                           <Clock className="h-2.5 w-2.5" />{" "}
                           {new Date(incident.createdAt).toLocaleTimeString([], {
                             hour: "2-digit",

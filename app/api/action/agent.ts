@@ -12,7 +12,7 @@ export async function searchKnowledgeBase(
 
   await requireOrganizationMembership(organizationId);
 
-  const queryVectorString = await getEmbeddingVectorString(query);
+  const queryVectorString = await getEmbeddingVectorString(query, organizationId);
   await prisma.$executeRawUnsafe(`SET hnsw.ef_search = 40;`);
 
   const results = await prisma.$queryRaw<queryResult[]>

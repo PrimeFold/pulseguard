@@ -1,18 +1,7 @@
 import Link from "next/link";
 import { getOrganizationAndMembership } from "@/lib/tenant";
-import { TelemetryChart } from "@/components/dashboard/TelemetryChart";
 import { DashboardOverviewClient } from "@/components/dashboard/DashboardOverviewClient";
-import { Button } from "@/components/ui/button";
-import {
-  ShieldAlert,
-  Activity,
-  Clock,
-  GitBranch,
-  Flame,
-  ArrowRight,
-  CheckCircle2,
-  Terminal,
-} from "lucide-react";
+import { Activity, Flame, ArrowRight } from "lucide-react";
 import { prisma } from "@/lib/auth";
 import { redis } from "@/lib/redis";
 
@@ -24,19 +13,32 @@ export default async function OrgOverviewPage({ params }: OverviewPageProps) {
   const { orgSlug } = await params;
   const { org } = await getOrganizationAndMembership(orgSlug);
 
-  const cacheKey = `dashboard:${org.id}`;
-  let dashboardDataStr = await redis.get(cacheKey);
-  let dashboardData;
+  const cacheKey = `dashboard:v2:${org.id}`;
+  let dashboardData: any = null;
 
-  if (dashboardDataStr) {
-    dashboardData = JSON.parse(dashboardDataStr);
-  } else {
+  try {
+    const dashboardDataStr = await redis.get(cacheKey);
+    if (dashboardDataStr) {
+      dashboardData = JSON.parse(dashboardDataStr);
+    }
+  } catch (err) {
+    // Non-blocking Redis fallback
+  }
+
+  if (!dashboardData) {
     const [openIncidents, totalResolved, recentLogs, recentIncidents] =
       await Promise.all([
         prisma.incident.findMany({
           where: { organizationId: org.id, status: "OPEN" },
           orderBy: { createdAt: "desc" },
           take: 5,
+          select: {
+            id: true,
+            title: true,
+            service: true,
+            status: true,
+            createdAt: true,
+          },
         }),
         prisma.incident.count({
           where: { organizationId: org.id, status: "RESOLVED" },
@@ -45,52 +47,74 @@ export default async function OrgOverviewPage({ params }: OverviewPageProps) {
           where: { organizationId: org.id },
           orderBy: { timestamp: "desc" },
           take: 100,
+          select: {
+            timestamp: true,
+            level: true,
+          },
         }),
         prisma.incident.findMany({
           where: { organizationId: org.id },
           orderBy: { createdAt: "desc" },
           take: 5,
+          select: {
+            id: true,
+            title: true,
+            service: true,
+            status: true,
+            createdAt: true,
+          },
         }),
       ]);
+
+    const now = Date.now();
+    const buckets = [5, 4, 3, 2, 1, 0].map((hoursAgo) => {
+      const bucketTime = new Date(now - hoursAgo * 60 * 60 * 1000);
+      const timeLabel = bucketTime.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      const windowStart = now - (hoursAgo + 1) * 60 * 60 * 1000;
+      const windowEnd = now - hoursAgo * 60 * 60 * 1000;
+
+      const logsInBucket = recentLogs.filter((l: any) => {
+        const t = new Date(l.timestamp).getTime();
+        return t >= windowStart && t < windowEnd;
+      });
+
+      return {
+        time: timeLabel,
+        errors: logsInBucket.filter(
+          (l: any) => l.level === "ERROR" || l.level === "FATAL",
+        ).length,
+        warnings: logsInBucket.filter((l: any) => l.level === "WARN").length,
+        info: logsInBucket.filter(
+          (l: any) => l.level === "INFO" || l.level === "DEBUG",
+        ).length,
+      };
+    });
 
     dashboardData = {
       openIncidents,
       totalResolved,
-      recentLogs,
+      totalLogsCount: recentLogs.length,
       recentIncidents,
+      buckets,
     };
-    await redis.setex(cacheKey, 60, JSON.stringify(dashboardData));
+
+    try {
+      await redis.setex(cacheKey, 60, JSON.stringify(dashboardData));
+    } catch (err) {
+      // Non-blocking Redis write fallback
+    }
   }
 
-  const { openIncidents, totalResolved, recentLogs, recentIncidents } =
-    dashboardData;
-
-  const now = Date.now();
-  const buckets = [5, 4, 3, 2, 1, 0].map((hoursAgo) => {
-    const bucketTime = new Date(now - hoursAgo * 60 * 60 * 1000);
-    const timeLabel = bucketTime.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    const windowStart = now - (hoursAgo + 1) * 60 * 60 * 1000;
-    const windowEnd = now - hoursAgo * 60 * 60 * 1000;
-
-    const logsInBucket = recentLogs.filter((l: any) => {
-      const t = new Date(l.timestamp).getTime();
-      return t >= windowStart && t < windowEnd;
-    });
-
-    return {
-      time: timeLabel,
-      errors: logsInBucket.filter(
-        (l: any) => l.level === "ERROR" || l.level === "FATAL",
-      ).length,
-      warnings: logsInBucket.filter((l: any) => l.level === "WARN").length,
-      info: logsInBucket.filter(
-        (l: any) => l.level === "INFO" || l.level === "DEBUG",
-      ).length,
-    };
-  });
+  const {
+    openIncidents,
+    totalResolved,
+    totalLogsCount,
+    recentIncidents,
+    buckets,
+  } = dashboardData;
 
   return (
     <div className="space-y-12">
@@ -125,7 +149,7 @@ export default async function OrgOverviewPage({ params }: OverviewPageProps) {
         org={org}
         openIncidents={openIncidents}
         totalResolved={totalResolved}
-        recentLogs={recentLogs}
+        recentLogs={{ length: totalLogsCount } as any}
         recentIncidents={recentIncidents}
         buckets={buckets}
       />

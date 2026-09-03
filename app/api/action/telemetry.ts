@@ -142,6 +142,19 @@ export async function getTelemetryLogs({
 }: TelemetryFilterParams) {
   await requireOrganizationMembership(organizationId);
 
+  const cacheKey = `telemetry:logs:${organizationId}:${service || "ALL"}:${level || "ALL"}:${search?.trim() || "EMPTY"}:${limit}`;
+
+  // 1. Try Redis cache first
+  try {
+    const { redis } = await import("@/lib/redis");
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+  } catch (err) {
+    // Non-blocking Redis fallback
+  }
+
   const whereClause: Prisma.TelemetryLogWhereInput = {
     organizationId,
   };
@@ -174,8 +187,18 @@ export async function getTelemetryLogs({
     }),
   ]);
 
-  return {
+  const result = {
     logs,
     services: availableServices.map((s: any) => s.service),
   };
+
+  // 2. Cache in Redis (30s TTL for real-time logs)
+  try {
+    const { redis } = await import("@/lib/redis");
+    await redis.setex(cacheKey, 30, JSON.stringify(result));
+  } catch (err) {
+    // Non-blocking Redis write fallback
+  }
+
+  return result;
 }

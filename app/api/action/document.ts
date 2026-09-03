@@ -8,6 +8,7 @@ import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { embedMany } from "ai";
 import { revalidatePath } from "next/cache";
 import { requireOrganizationMembership } from '@/lib/authorization';
+import { redis } from "@/lib/redis";
 
 export async function IngestDocument({
     organizationId,
@@ -107,4 +108,47 @@ export async function uploadDocumentAction(formData: FormData) {
     type,
     rawContent: rawText,
   });
+}
+
+export async function getRecentDocuments(organizationId: string) {
+  try {
+    await requireOrganizationMembership(organizationId);
+    const cacheKey = `org:${organizationId}:recent_docs`;
+    
+    // Try cache first
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch (e) {
+      console.warn("[Redis] Failed to get cached recent docs", e);
+    }
+    
+    // Fetch from DB
+    const docs = await prisma.document.findMany({
+      where: { organizationId },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        createdAt: true,
+        sourceUrl: true,
+      }
+    });
+    
+    // Set cache
+    try {
+      await redis.setex(cacheKey, 60, JSON.stringify(docs)); // 60s cache
+    } catch (e) {
+      console.warn("[Redis] Failed to set cached recent docs", e);
+    }
+    
+    return docs;
+  } catch (error) {
+    console.error("[getRecentDocuments]", error);
+    throw new Error("Failed to fetch recent documents");
+  }
 }

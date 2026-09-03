@@ -1,4 +1,4 @@
-'use server';
+"use server";
 
 import { prisma } from "@/lib/auth";
 import { IngestDocument } from "./document";
@@ -11,7 +11,7 @@ import { google } from "@ai-sdk/google";
 import {
   requireIncidentAccess,
   requireOrganizationMembership,
-} from '@/lib/authorization';
+} from "@/lib/authorization";
 import { getOrgLanguageModel } from "@/lib/ai/provider";
 
 export async function resolveIncidentAndEmbedRCA({
@@ -20,7 +20,10 @@ export async function resolveIncidentAndEmbedRCA({
   organizationId,
 }: ResolveIncidentParams) {
   try {
-    const incidentToResolve = await requireIncidentAccess(incidentId, organizationId);
+    const incidentToResolve = await requireIncidentAccess(
+      incidentId,
+      organizationId,
+    );
     const incident = await prisma.incident.update({
       where: {
         id: incidentId,
@@ -46,13 +49,13 @@ export async function resolveIncidentAndEmbedRCA({
     return {
       success: true,
       incidentId: incident.id,
-      message:"Successfully resolved Incident and embedded RCA"
+      message: "Successfully resolved Incident and embedded RCA",
     };
   } catch (error) {
     return {
-      success:false,
-      message:(error as Error).message
-    }
+      success: false,
+      message: (error as Error).message,
+    };
   }
 }
 
@@ -61,17 +64,24 @@ export async function createIncidentAction(data: IncidentParams) {
   // to free storage..
   try {
     await requireOrganizationMembership(data.organizationId);
-    const { title, service, severity, errorPayload, organizationId, status, id } =
-      await prisma.incident.create({
-        data: {
-          title: data.title,
-          service: data.service,
-          severity: data.severity,
-          errorPayload: data.errorPayload,
-          organizationId: data.organizationId,
-          status: IncidentStatus.OPEN,
-        },
-      });
+    const {
+      title,
+      service,
+      severity,
+      errorPayload,
+      organizationId,
+      status,
+      id,
+    } = await prisma.incident.create({
+      data: {
+        title: data.title,
+        service: data.service,
+        severity: data.severity,
+        errorPayload: data.errorPayload,
+        organizationId: data.organizationId,
+        status: IncidentStatus.OPEN,
+      },
+    });
 
     const rcaResponse = await generateRca({
       title,
@@ -79,14 +89,12 @@ export async function createIncidentAction(data: IncidentParams) {
       severity,
       errorPayload,
       organizationId,
-      incidentId:id
+      incidentId: id,
     });
 
-    if(!rcaResponse.success){
-      throw new Error("RCA couldn't be generated..")
+    if (!rcaResponse.success) {
+      throw new Error("RCA couldn't be generated..");
     }
-
-
 
     revalidatePath("/dashboard/incidents");
     return {
@@ -95,9 +103,8 @@ export async function createIncidentAction(data: IncidentParams) {
       severity,
       status,
       errorPayload,
-      organizationId
+      organizationId,
     };
-
   } catch (error) {
     throw new Error((error as Error).message);
   }
@@ -110,14 +117,14 @@ async function generateRca({
   severity,
   errorPayload,
   organizationId,
-  incidentId
+  incidentId,
 }: {
   title: string;
   service: string;
   severity: IncidentParams["severity"];
   errorPayload: Prisma.JsonValue;
   organizationId: string;
-  incidentId:string;
+  incidentId: string;
 }) {
   try {
     const resolvedModel = await getOrgLanguageModel(organizationId);
@@ -137,7 +144,7 @@ async function generateRca({
             Incident-id:${incidentId}
             Service : ${service}
             Severity : ${severity}
-            Error-payload : ${JSON.stringify(errorPayload,null,2)}
+            Error-payload : ${JSON.stringify(errorPayload, null, 2)}
 
             ---------------------------------------
             Also mention important nuances , caveats and trade-offs for this solution. - (IF EXISTS)
@@ -150,14 +157,18 @@ async function generateRca({
       throw new Error("failed to generate RCA");
     }
 
-    const resolveResponse = await resolveIncidentAndEmbedRCA({incidentId,rootCauseAnalysis:output,organizationId})
-    if(!resolveResponse.success || !resolveResponse.incidentId?.trim()){
-      throw new Error(`${resolveResponse.message}`)
+    const resolveResponse = await resolveIncidentAndEmbedRCA({
+      incidentId,
+      rootCauseAnalysis: output,
+      organizationId,
+    });
+    if (!resolveResponse.success || !resolveResponse.incidentId?.trim()) {
+      throw new Error(`${resolveResponse.message}`);
     }
     return {
       success: true,
       output,
-      message:resolveResponse.message,
+      message: resolveResponse.message,
     };
   } catch (error) {
     return {
@@ -166,7 +177,6 @@ async function generateRca({
     };
   }
 }
-
 
 //Updating the incident status
 export async function updateIncidentStatus(
@@ -191,12 +201,12 @@ export async function updateIncidentStatus(
   }
 }
 
-export async function getIncidents(organizationId:string){
+export async function getIncidents(organizationId: string) {
   try {
     await requireOrganizationMembership(organizationId);
     const incidents = await prisma.incident.findMany({
       where: { organizationId },
-      take:10
+      take: 10,
     });
     return incidents;
   } catch (error) {
@@ -215,9 +225,22 @@ export async function getIncidentsList({
 }: IncidentFilterParams) {
   await requireOrganizationMembership(organizationId);
 
+  const cacheKey = `incidents:list:${organizationId}:${status || "ALL"}`;
+
+  // 1. Try Redis Cache first
+  try {
+    const { redis } = await import("@/lib/redis");
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+  } catch (err) {
+    // Non-blocking Redis fallback
+  }
+
   const whereClause: Prisma.IncidentWhereInput = { organizationId };
 
-  if (status && status !== 'ALL') {
+  if (status && status !== "ALL") {
     whereClause.status = status as IncidentStatus;
   }
 
@@ -234,19 +257,24 @@ export async function getIncidentsList({
         fingerprint: true,
         description: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     }),
     prisma.incident.groupBy({
-      by: ['status'],
+      by: ["status"],
       where: { organizationId },
       _count: { id: true },
     }),
   ]);
 
-  const openCount = stats.find((s: any) => s.status === 'OPEN')?._count.id || 0;
-  const investigatingCount = stats.find((s: any) => s.status === 'INVESTIGATING')?._count.id || 0;
-  const resolvedCount = stats.find((s: any) => s.status === 'RESOLVED')?._count.id || 0;
-  const totalCount = stats.reduce((acc: number, curr: any) => acc + curr._count.id, 0);
+  const openCount = stats.find((s: any) => s.status === "OPEN")?._count.id || 0;
+  const investigatingCount =
+    stats.find((s: any) => s.status === "INVESTIGATING")?._count.id || 0;
+  const resolvedCount =
+    stats.find((s: any) => s.status === "RESOLVED")?._count.id || 0;
+  const totalCount = stats.reduce(
+    (acc: number, curr: any) => acc + curr._count.id,
+    0,
+  );
 
   const counts = {
     ALL: totalCount,
@@ -255,5 +283,15 @@ export async function getIncidentsList({
     RESOLVED: resolvedCount,
   };
 
-  return { incidents, counts };
+  const result = { incidents, counts };
+
+  // 2. Cache in Redis (60s TTL)
+  try {
+    const { redis } = await import("@/lib/redis");
+    await redis.setex(cacheKey, 60, JSON.stringify(result));
+  } catch (err) {
+    // Non-blocking Redis write fallback
+  }
+
+  return result;
 }

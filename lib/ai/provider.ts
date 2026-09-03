@@ -1,10 +1,18 @@
-import { createCipheriv, createDecipheriv, randomBytes, createHash } from "crypto";
+import {
+  createCipheriv,
+  createDecipheriv,
+  randomBytes,
+  createHash,
+} from "crypto";
 import { google, createGoogleGenerativeAI } from "@ai-sdk/google";
 import { prisma } from "@/lib/auth";
 
 // Encryption setup
 const ALGORITHM = "aes-256-cbc";
-const ENCRYPTION_SECRET = process.env.ENCRYPTION_KEY || process.env.BETTER_AUTH_SECRET || "pulseguard_default_super_secret_key_32b";
+const ENCRYPTION_SECRET =
+  process.env.ENCRYPTION_KEY ||
+  process.env.BETTER_AUTH_SECRET ||
+  "pulseguard_default_super_secret_key_32b";
 const KEY = createHash("sha256").update(ENCRYPTION_SECRET).digest();
 
 export function maskApiKey(key: string): string {
@@ -55,7 +63,9 @@ export async function getOrgLanguageModel(organizationId: string) {
       return google(DEFAULT_TEXT_MODEL);
     }
 
-    const decryptedKey = org.aiApiKeyEncrypted ? decryptApiKey(org.aiApiKeyEncrypted) : null;
+    const decryptedKey = org.aiApiKeyEncrypted
+      ? decryptApiKey(org.aiApiKeyEncrypted)
+      : null;
     const provider = org.aiProvider?.toLowerCase() || "google";
     const modelName = org.aiModel || DEFAULT_TEXT_MODEL;
 
@@ -78,7 +88,7 @@ export async function getOrgLanguageModel(organizationId: string) {
  * Dynamically resolves the embedding model for an organization.
  */
 export async function getOrgEmbeddingModel(organizationId: string) {
-  const DEFAULT_EMBEDDING_MODEL = "text-embedding-004";
+  const DEFAULT_EMBEDDING_MODEL = "gemini-embedding-001";
   try {
     const org: any = await (prisma.organization as any).findUnique({
       where: { id: organizationId },
@@ -89,8 +99,15 @@ export async function getOrgEmbeddingModel(organizationId: string) {
       },
     });
 
-    const decryptedKey = org?.aiApiKeyEncrypted ? decryptApiKey(org.aiApiKeyEncrypted) : null;
-    const embeddingModel = org?.aiEmbeddingModel || DEFAULT_EMBEDDING_MODEL;
+    const decryptedKey = org?.aiApiKeyEncrypted
+      ? decryptApiKey(org.aiApiKeyEncrypted)
+      : null;
+    let embeddingModel = org?.aiEmbeddingModel || DEFAULT_EMBEDDING_MODEL;
+
+    // Migrate deprecated text-embedding-004 to gemini-embedding-001
+    if (embeddingModel === "text-embedding-004") {
+      embeddingModel = "gemini-embedding-001";
+    }
 
     if (decryptedKey) {
       const customGoogle = createGoogleGenerativeAI({ apiKey: decryptedKey });

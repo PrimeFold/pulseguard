@@ -7,21 +7,18 @@ import { prisma } from "@/lib/auth";
 import { requireOrganizationMembership } from "@/lib/authorization";
 import { OrganizationMember, Prisma } from "@/lib/generated/prisma/client";
 
-
 export type OrganizationMemberWithUser = Prisma.OrganizationMemberGetPayload<{
-  include:{
-    user:{
-      select:{
-        id:true,
-        name:true,
-        email:true,
-        image:true
-      }
-    }
-  }
-}>
-
-
+  include: {
+    user: {
+      select: {
+        id: true;
+        name: true;
+        email: true;
+        image: true;
+      };
+    };
+  };
+}>;
 
 export async function getTeamMembers({
   organizationId,
@@ -50,6 +47,19 @@ export async function getTeamMembers({
       }),
     };
 
+    const cacheKey = `team:members:${organizationId}:${page}:${limit}:${role || "ALL"}:${searchQuery?.trim() || "EMPTY"}`;
+
+    // 1. Try Redis cache first
+    try {
+      const { redis } = await import("@/lib/redis");
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch (err) {
+      // Non-blocking Redis fallback
+    }
+
     const [total, data] = await prisma.$transaction([
       prisma.organizationMember.count({
         where: {
@@ -73,7 +83,7 @@ export async function getTeamMembers({
     ]);
 
     const totalPages = Math.ceil(total / limit);
-    return {
+    const result = {
       data,
       metadata: {
         page,
@@ -84,6 +94,16 @@ export async function getTeamMembers({
         hasPreviousPage: page > 1,
       },
     };
+
+    // 2. Cache in Redis (120s TTL)
+    try {
+      const { redis } = await import("@/lib/redis");
+      await redis.setex(cacheKey, 120, JSON.stringify(result));
+    } catch (err) {
+      // Non-blocking Redis write fallback
+    }
+
+    return result;
   } catch (error: any) {
     throw new Error(error.message || "Failed to fetch team members..");
   }
@@ -112,6 +132,17 @@ export async function updateMemberRole(params: {
     },
   });
 
+  // ⚡ Immediately invalidate active sessions for target user so next request pulls the new role
+  try {
+    await prisma.session.deleteMany({
+      where: { userId: params.targetUserId },
+    });
+    const { redis } = await import("@/lib/redis");
+    await redis.del(`notifications:user:${params.targetUserId}`);
+  } catch (err) {
+    // Non-blocking cleanup
+  }
+
   return { success: true, member: updated };
 }
 
@@ -123,10 +154,16 @@ export async function removeMemberFromOrg(params: {
   targetUserId: string;
 }) {
   const { requireOrganizationRole } = await import("@/lib/authorization");
-  const callerAccess = await requireOrganizationRole(params.organizationId, ["OWNER", "ADMIN"]);
+  const callerAccess = await requireOrganizationRole(params.organizationId, [
+    "OWNER",
+    "ADMIN",
+  ]);
 
   // Prevent removing oneself if they are the only owner
-  if (callerAccess.user.id === params.targetUserId && callerAccess.membership.role === "OWNER") {
+  if (
+    callerAccess.user.id === params.targetUserId &&
+    callerAccess.membership.role === "OWNER"
+  ) {
     const ownerCount = await prisma.organizationMember.count({
       where: { organizationId: params.organizationId, role: "OWNER" },
     });
@@ -144,6 +181,16 @@ export async function removeMemberFromOrg(params: {
     },
   });
 
+  // ⚡ Immediately invalidate active sessions for removed user
+  try {
+    await prisma.session.deleteMany({
+      where: { userId: params.targetUserId },
+    });
+    const { redis } = await import("@/lib/redis");
+    await redis.del(`notifications:user:${params.targetUserId}`);
+  } catch (err) {
+    // Non-blocking cleanup
+  }
+
   return { success: true };
 }
-

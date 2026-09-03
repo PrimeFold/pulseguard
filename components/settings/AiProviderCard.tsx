@@ -133,7 +133,7 @@ export function AiProviderCard({
         apiKey: apiKey || undefined,
       });
 
-      if (!res.success) throw new Error(res.error);
+      if (!res.success) throw new Error("Failed to update AI settings");
 
       if (res.apiKeyDisplay) {
         setApiKeyDisplay(res.apiKeyDisplay);
@@ -155,7 +155,7 @@ export function AiProviderCard({
     if (!confirm("Remove the custom API key for this organization?")) return;
     setDeleting(true);
     try {
-      await removeCustomAiKey({ organizationId });
+      await removeCustomAiKey(organizationId);
       setApiKeyDisplay(null);
       setMessage({
         type: "success",

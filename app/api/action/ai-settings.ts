@@ -98,15 +98,20 @@ export async function fetchLiveProviderModels(params: {
   apiKey?: string;
   organizationId?: string;
   forceRefresh?: boolean;
-}): Promise<{ textModels: string[]; embeddingModels: string[]; source: "live_api" | "fallback" }> {
+}): Promise<{
+  textModels: string[];
+  embeddingModels: string[];
+  source: "live_api" | "fallback";
+}> {
   const { provider, organizationId, forceRefresh } = params;
   const p = provider.toLowerCase();
   let resolvedKey = params.apiKey?.trim();
 
   // Cache key per organization (or global fallback if no key)
-  const cacheKey = organizationId && resolvedKey
-    ? `models:cache:${organizationId}:${p}`
-    : `models:cache:global:${p}`;
+  const cacheKey =
+    organizationId && resolvedKey
+      ? `models:cache:${organizationId}:${p}`
+      : `models:cache:global:${p}`;
 
   // 1. Check Redis Cache first unless forceRefresh is requested
   if (!forceRefresh) {
@@ -135,31 +140,48 @@ export async function fetchLiveProviderModels(params: {
   try {
     // 1. Google Gemini Live API
     if (p === "google") {
-      const key = resolvedKey || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
+      const key =
+        resolvedKey ||
+        process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+        process.env.GEMINI_API_KEY;
       if (key) {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`, {
-          next: { revalidate: 3600 },
-        });
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models?key=${key}`,
+          {
+            next: { revalidate: 3600 },
+          },
+        );
         if (res.ok) {
           const data = await res.json();
           const models: any[] = data.models || [];
           const textModels = models
-            .filter((m) => m.supportedGenerationMethods?.includes("generateContent"))
+            .filter((m) =>
+              m.supportedGenerationMethods?.includes("generateContent"),
+            )
             .map((m) => m.name.replace("models/", ""))
             .filter((name) => !name.includes("vision") && !name.includes("aqa"))
             .sort((a, b) => b.localeCompare(a));
 
           const embeddingModels = models
-            .filter((m) => m.supportedGenerationMethods?.includes("embedContent") || m.name.includes("embedding"))
+            .filter(
+              (m) =>
+                m.supportedGenerationMethods?.includes("embedContent") ||
+                m.name.includes("embedding"),
+            )
             .map((m) => m.name.replace("models/", ""));
 
           if (textModels.length > 0) {
             const result = {
               textModels,
-              embeddingModels: embeddingModels.length > 0 ? embeddingModels : ["text-embedding-004", "embedding-001"],
+              embeddingModels:
+                embeddingModels.length > 0
+                  ? embeddingModels
+                  : ["text-embedding-004", "embedding-001"],
               source: "live_api" as const,
             };
-            await redis.setex(cacheKey, 86400, JSON.stringify(result)).catch(() => {});
+            await redis
+              .setex(cacheKey, 86400, JSON.stringify(result))
+              .catch(() => {});
             return result;
           }
         }
@@ -179,7 +201,15 @@ export async function fetchLiveProviderModels(params: {
           const models: any[] = data.data || [];
           const textModels = models
             .map((m) => m.id)
-            .filter((id) => (id.startsWith("gpt-") || id.startsWith("o1") || id.startsWith("o3") || id.startsWith("chatgpt")) && !id.includes("audio") && !id.includes("realtime"))
+            .filter(
+              (id) =>
+                (id.startsWith("gpt-") ||
+                  id.startsWith("o1") ||
+                  id.startsWith("o3") ||
+                  id.startsWith("chatgpt")) &&
+                !id.includes("audio") &&
+                !id.includes("realtime"),
+            )
             .sort((a, b) => b.localeCompare(a));
 
           const embeddingModels = models
@@ -190,10 +220,15 @@ export async function fetchLiveProviderModels(params: {
           if (textModels.length > 0) {
             const result = {
               textModels,
-              embeddingModels: embeddingModels.length > 0 ? embeddingModels : ["text-embedding-3-small", "text-embedding-3-large"],
+              embeddingModels:
+                embeddingModels.length > 0
+                  ? embeddingModels
+                  : ["text-embedding-3-small", "text-embedding-3-large"],
               source: "live_api" as const,
             };
-            await redis.setex(cacheKey, 86400, JSON.stringify(result)).catch(() => {});
+            await redis
+              .setex(cacheKey, 86400, JSON.stringify(result))
+              .catch(() => {});
             return result;
           }
         }
@@ -214,14 +249,18 @@ export async function fetchLiveProviderModels(params: {
         if (res.ok) {
           const data = await res.json();
           const models: any[] = data.data || [];
-          const textModels = models.map((m) => m.id).sort((a, b) => b.localeCompare(a));
+          const textModels = models
+            .map((m) => m.id)
+            .sort((a, b) => b.localeCompare(a));
           if (textModels.length > 0) {
             const result = {
               textModels,
               embeddingModels: ["text-embedding-004"],
               source: "live_api" as const,
             };
-            await redis.setex(cacheKey, 86400, JSON.stringify(result)).catch(() => {});
+            await redis
+              .setex(cacheKey, 86400, JSON.stringify(result))
+              .catch(() => {});
             return result;
           }
         }
@@ -239,14 +278,18 @@ export async function fetchLiveProviderModels(params: {
         if (res.ok) {
           const data = await res.json();
           const models: any[] = data.data || [];
-          const textModels = models.map((m) => m.id).sort((a, b) => b.localeCompare(a));
+          const textModels = models
+            .map((m) => m.id)
+            .sort((a, b) => b.localeCompare(a));
           if (textModels.length > 0) {
             const result = {
               textModels,
               embeddingModels: ["text-embedding-004"],
               source: "live_api" as const,
             };
-            await redis.setex(cacheKey, 86400, JSON.stringify(result)).catch(() => {});
+            await redis
+              .setex(cacheKey, 86400, JSON.stringify(result))
+              .catch(() => {});
             return result;
           }
         }
@@ -267,7 +310,9 @@ export async function fetchLiveProviderModels(params: {
           embeddingModels: ["text-embedding-004"],
           source: "live_api" as const,
         };
-        await redis.setex(cacheKey, 86400, JSON.stringify(result)).catch(() => {});
+        await redis
+          .setex(cacheKey, 86400, JSON.stringify(result))
+          .catch(() => {});
         return result;
       }
     }
@@ -278,23 +323,57 @@ export async function fetchLiveProviderModels(params: {
   // Fallback defaults if API key is not yet set or offline
   const fallbacks: Record<string, { text: string[]; embed: string[] }> = {
     google: {
-      text: ["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash", "gemini-1.0-pro"],
-      embed: ["text-embedding-004", "embedding-001"],
+      text: [
+        "gemini-2.0-flash",
+        "gemini-1.5-pro",
+        "gemini-1.5-flash",
+        "gemini-1.0-pro",
+      ],
+      embed: [
+        "gemini-embedding-001",
+        "gemini-embedding-2-preview",
+        "text-embedding-004",
+      ],
     },
     openai: {
-      text: ["gpt-4o", "gpt-4o-mini", "o1-mini", "o1-preview", "gpt-4-turbo", "gpt-3.5-turbo"],
-      embed: ["text-embedding-3-small", "text-embedding-3-large", "text-embedding-ada-002"],
+      text: [
+        "gpt-4o",
+        "gpt-4o-mini",
+        "o1-mini",
+        "o1-preview",
+        "gpt-4-turbo",
+        "gpt-3.5-turbo",
+      ],
+      embed: [
+        "text-embedding-3-small",
+        "text-embedding-3-large",
+        "text-embedding-ada-002",
+      ],
     },
     anthropic: {
-      text: ["claude-3-5-sonnet-latest", "claude-3-5-haiku-latest", "claude-3-opus-latest"],
+      text: [
+        "claude-3-5-sonnet-latest",
+        "claude-3-5-haiku-latest",
+        "claude-3-opus-latest",
+      ],
       embed: ["text-embedding-004"],
     },
     groq: {
-      text: ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768", "gemma2-9b-it"],
+      text: [
+        "llama-3.3-70b-versatile",
+        "llama-3.1-8b-instant",
+        "mixtral-8x7b-32768",
+        "gemma2-9b-it",
+      ],
       embed: ["text-embedding-004"],
     },
     openrouter: {
-      text: ["anthropic/claude-3.5-sonnet", "openai/gpt-4o", "meta-llama/llama-3.3-70b-instruct", "deepseek/deepseek-r1"],
+      text: [
+        "anthropic/claude-3.5-sonnet",
+        "openai/gpt-4o",
+        "meta-llama/llama-3.3-70b-instruct",
+        "deepseek/deepseek-r1",
+      ],
       embed: ["text-embedding-004"],
     },
   };
@@ -305,7 +384,8 @@ export async function fetchLiveProviderModels(params: {
     embeddingModels: selected.embed,
     source: "fallback" as const,
   };
-  await redis.setex(cacheKey, 3600, JSON.stringify(fallbackResult)).catch(() => {});
+  await redis
+    .setex(cacheKey, 3600, JSON.stringify(fallbackResult))
+    .catch(() => {});
   return fallbackResult;
 }
-
