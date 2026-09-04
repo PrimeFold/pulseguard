@@ -1,11 +1,11 @@
 {
-    "private": true,
-    "workspaces": [
-        "frontend",
-        "backend"
-    ],
-    "name": "pulseguard-workspace",
-    "devDependencies": {
-        "@types/nodemailer": "^8.0.1"
-    }
+  "name": "pulseguard-workspace",
+  "private": true,
+  "workspaces": ["frontend", "backend"],
+  "scripts": {
+    "postinstall": "npx prisma generate --schema=backend/src/prisma/schema.prisma"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "^8.0.1"
+  }
 }
