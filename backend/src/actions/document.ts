@@ -50,7 +50,9 @@ export async function IngestDocument({
             })
             for(let i = 0 ; i<rawChunks.length ; i++){
                 const chunkText = rawChunks[i];
-                const chunkVector = JSON.stringify(embeddings[i]); //Gets the vector of the current chunk from the embeddings array and converts them into json-formatted strings.
+                // Slice embedding to match schema dimensionality (736) - mathematically valid for Matryoshka representation learning models like text-embedding-004
+                const slicedEmbedding = embeddings[i].slice(0, 736);
+                const chunkVector = JSON.stringify(slicedEmbedding);
                 await tx.$executeRaw
                 `
                     INSERT INTO "DocumentChunk" ("id", "documentId", "chunkIndex", "content", "embedding", "createdAt")
@@ -81,33 +83,37 @@ export async function IngestDocument({
 
 //This function takes the file and puts it through parsing , then it takes the raw text and feeds it to ingestion function..
 export async function uploadDocumentAction(formData: FormData) {
-  const file = formData.get('file');
+  try {
+    const file = formData.get('file');
 
-  if (!(file instanceof File)) {
-    throw new Error('No file uploaded');
+    if (!(file instanceof File)) {
+      throw new Error('No file uploaded');
+    }
+
+    const title = (formData.get('title') as string) || file.name;
+    const rawType = formData.get('type');
+    const type =
+      typeof rawType === 'string' && rawType in DocumentType
+        ? (rawType as DocumentType)
+        : DocumentType.RUNBOOK;
+    const organizationId = formData.get('organizationId') as string;
+
+    const rawText = await parseFileToText(file);
+
+    if (!rawText.trim()) {
+      throw new Error('Extracted document content is empty');
+    }
+
+    return await IngestDocument({
+      organizationId,
+      title,
+      type,
+      rawContent: rawText,
+    });
+  } catch (error: any) {
+    console.error("UPLOAD ERROR:", error);
+    return { error: error.message || error.toString() };
   }
-
-  const title = (formData.get('title') as string) || file.name;
-  const rawType = formData.get('type');
-  const type =
-    typeof rawType === 'string' && rawType in DocumentType
-      ? (rawType as DocumentType)
-      : DocumentType.RUNBOOK;
-  const organizationId = formData.get('organizationId') as string;
-
-  const rawText = await parseFileToText(file);
-
-  if (!rawText.trim()) {
-    throw new Error('Extracted document content is empty');
-  }
-
- 
-  return await IngestDocument({
-    organizationId,
-    title,
-    type,
-    rawContent: rawText,
-  });
 }
 
 export async function getRecentDocuments(organizationId: string) {

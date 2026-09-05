@@ -17,6 +17,7 @@ import {
 import { useState, type FormEvent, useEffect, useRef } from "react";
 import { DiffApprovalCard } from "./DiffApprovalCard";
 import { KnowledgeView } from "./KnowledgeView";
+import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 
 interface WarRoomChatProps {
   organizationId: string;
@@ -219,17 +220,35 @@ export function WarRoomChat({
                         : "bg-black border border-zinc-900 text-zinc-200 font-sans text-[11px]"
                     }`}
                   >
-                    <div className="space-y-2 whitespace-pre-wrap">
+                    <div className="space-y-2">
+                      {(!m.parts || m.parts.length === 0) && (m as any).content && (
+                        m.role === "user" ? (
+                          <div className="whitespace-pre-wrap leading-relaxed text-[11px] font-mono text-zinc-100">
+                            {(m as any).content}
+                          </div>
+                        ) : (
+                          <MarkdownRenderer
+                            content={(m as any).content}
+                            className="text-[11px]"
+                          />
+                        )
+                      )}
                       {m.parts?.map((part, index) => {
                         // 1. Regular text
                         if (part.type === "text") {
-                          return (
+                          return m.role === "user" ? (
                             <div
                               key={index}
-                              className="whitespace-pre-wrap leading-relaxed text-[11px]"
+                              className="whitespace-pre-wrap leading-relaxed text-[11px] font-mono text-zinc-100"
                             >
                               {part.text}
                             </div>
+                          ) : (
+                            <MarkdownRenderer
+                              key={index}
+                              content={part.text}
+                              className="text-[11px]"
+                            />
                           );
                         }
 

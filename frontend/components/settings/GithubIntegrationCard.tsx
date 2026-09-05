@@ -25,7 +25,7 @@ export function GitHubIntegrationCard({
   githubRepo,
   canManage,
 }: Props) {
-  const appSlug = process.env.NEXT_PUBLIC_GITHUB_APP_SLUG;
+  const appSlug = process.env.NEXT_PUBLIC_GITHUB_APP_SLUG || "pulseguard-app";
   const installUrl = `https://github.com/apps/${appSlug}/installations/new?state=${organizationId}`;
   return (
     <Card className="border-border/60 bg-card/40 backdrop-blur">

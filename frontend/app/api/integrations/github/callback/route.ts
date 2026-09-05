@@ -34,25 +34,25 @@ export async function GET(req:NextRequest){
         const {data} = await octokit.rest.apps.listReposAccessibleToInstallation();
         const defaultRepo = data.repositories[0];
 
-        //3.Linking.. this installation to the current user's organization in DB..
-        await prisma.organization.update({
-            where:{
-                id:targetOrgId
+        //3. Linking this installation to the current user's organization in DB
+        const updatedOrg = await prisma.organization.update({
+            where: {
+                id: targetOrgId
             },
-            data:{
-                githubInstallationId:installationId,
+            data: {
+                githubInstallationId: installationId,
                 githubDefaultRepo: defaultRepo ? defaultRepo.name : null,
                 githubOwner: defaultRepo ? defaultRepo.owner.login : null,
             }
-        })
+        });
 
         return NextResponse.redirect(
-            new URL(`/dashboard/${targetOrgId}/settings?github=connected`, req.url)
-        )
+            new URL(`/${updatedOrg.slug}?github=connected`, req.url)
+        );
     } catch (error) {
         console.error('GitHub link error:', error);
         return NextResponse.redirect(
-          new URL('/dashboard/settings?error=github_link_failed', req.url)
+          new URL('/workspaces?error=github_link_failed', req.url)
         );
     }
 }

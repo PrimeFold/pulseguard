@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { prisma } from "@/lib/auth";
 import { IngestDocument } from "./document";
@@ -129,18 +129,26 @@ async function generateRca({
   try {
     const resolvedModel = await getOrgLanguageModel(organizationId);
 
-    const { output } = await generateText({
+    const { text } = await generateText({
       model: resolvedModel as any,
       prompt: `
-            You're an expert at analysing errors , issues , exceptions on frontend & backend systems of a web-application.
-            Given this context, identify the core root cause of this incident and explain it clearly in a succinct 2-4 sentences summary:
-
-            Incident Message: ${incident.message}
-            Stack Trace: ${incident.stackTrace || 'None'}
-            Trigger Context: ${incident.triggerContext || 'None'}
-            Component/Service: ${incident.service || 'Unknown'}
-            Level: ${incident.level}
-        `,
+          You are an expert at analysing errors, issues, exceptions on frontend & backend systems of a web-application.
+          An incident is the information about the issues that happened in the application in a particular organisation (team).
+          Your job is to prepare a neat, accurate and working solution for the incident, titled Root cause analysis aka RCA.
+          The incident information goes like this: 
+          
+          ------------------
+          The ${title}
+          ------------------
+          Organisation-id : ${organizationId}
+          Incident-id:${incidentId}
+          Service : ${service}
+          Severity : ${severity}
+          Error-payload : ${JSON.stringify(errorPayload, null, 2)}
+          
+          ---------------------------------------
+          Also mention important nuances, caveats and trade-offs for this solution. - (IF EXISTS)
+      `,
       maxRetries: 2,
     });
 
@@ -286,3 +294,4 @@ export async function getIncidentsList({
 
   return result;
 }
+

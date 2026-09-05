@@ -12,6 +12,8 @@ export function KnowledgeView({ organizationId }: KnowledgeViewProps) {
   const [documents, setDocuments] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   useEffect(() => {
     loadDocuments();
@@ -34,18 +36,25 @@ export function KnowledgeView({ organizationId }: KnowledgeViewProps) {
     if (!file) return;
 
     setIsUploading(true);
+    setUploadSuccess(false);
+    setUploadError(null);
     try {
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("organizationId", organizationId);
       formData.append("title", file.name);
       formData.append("type", "RUNBOOK");
-      formData.append("organizationId", organizationId);
 
-      await uploadDocumentAction(formData);
+      const res = await uploadDocumentAction(formData);
+      if (res && typeof res === 'object' && 'error' in res && res.error) {
+        throw new Error(res.error as string);
+      }
       await loadDocuments(); // Reload after upload
+      setUploadSuccess(true);
+      setTimeout(() => setUploadSuccess(false), 3000);
     } catch (err) {
       console.error(err);
-      alert("Failed to upload document");
+      setUploadError(err instanceof Error ? err.message : "Failed to upload document");
     } finally {
       setIsUploading(false);
       e.target.value = "";

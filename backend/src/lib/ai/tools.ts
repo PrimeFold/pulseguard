@@ -13,14 +13,14 @@ export function createIncidentTools(organizationId: string) {
     search_knowledge_base: tool({
       description:
         "Search the organization's parsed runbooks and troubleshooting documentation for matching error mitigation steps.",
-      parameters: z.object({
+      inputSchema: z.object({
         query: z
           .string()
           .describe(
             "Semantic search query, e.g. 'postgres pool limit' or 'OAuth connection timeout'",
           ),
       }),
-      execute: async ({ query }) => {
+      execute: async ({ query }: { query: string }) => {
         try {
           const results = await searchKnowledgeBase(query, organizationId);
           return (results || []).map((r) => ({
@@ -38,7 +38,7 @@ export function createIncidentTools(organizationId: string) {
     query_telemetry_logs: tool({
       description:
         "Query structured error logs and telemetry around an incident timeframe to identify stack traces and failure causes.",
-      parameters: z.object({
+      inputSchema: z.object({
         service: z
           .string()
           .optional()
@@ -59,6 +59,13 @@ export function createIncidentTools(organizationId: string) {
         toDate,
         searchQuery,
         limit,
+      }: {
+        service?: string;
+        level?: (typeof telemetryLevels)[number];
+        fromDate?: string;
+        toDate?: string;
+        searchQuery?: string;
+        limit?: number;
       }) => {
         try {
           const result = await getTelemetry({
@@ -93,7 +100,7 @@ export function createIncidentTools(organizationId: string) {
     fetch_repo_file: tool({
       description:
         "Fetch the source code of a specific file from the connected repository.",
-      parameters: z.object({
+      inputSchema: z.object({
         filePath: z
           .string()
           .describe('Relative path to the file, e.g. "src/lib/db.ts"'),
@@ -102,7 +109,7 @@ export function createIncidentTools(organizationId: string) {
           .default("main")
           .describe("Branch or commit SHA to read from"),
       }),
-      execute: async ({ filePath, ref }) => {
+      execute: async ({ filePath, ref }: { filePath: string; ref?: string }) => {
         try {
           const org = await prisma.organization.findUnique({
             where: {
@@ -145,7 +152,7 @@ export function createIncidentTools(organizationId: string) {
     propose_hotfix: tool({
       description:
         "Propose a code fix and PR structure for human review before creating the GitHub PR.",
-      parameters: z.object({
+      inputSchema: z.object({
         filePath: z.string().describe("Target file path"),
         originalSnippet: z.string().describe("The broken code lines"),
         updatedContent: z
@@ -160,7 +167,7 @@ export function createIncidentTools(organizationId: string) {
           .string()
           .describe("Markdown explanation of root cause and fix"),
       }),
-      execute: async (proposal) => {
+      execute: async (proposal: any) => {
         return {
           status: "requires_approval",
           proposal,

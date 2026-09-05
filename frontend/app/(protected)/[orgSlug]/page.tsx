@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getOrganizationAndMembership } from "@/lib/tenant";
 import { DashboardOverviewClient } from "@/components/dashboard/DashboardOverviewClient";
+import { GitHubConnectionReminder } from "@/components/dashboard/GitHubConnectionReminder";
 import { Activity, Flame, ArrowRight } from "lucide-react";
 import { prisma } from "@/lib/auth";
 import { redis } from "@/lib/redis";
@@ -11,7 +12,7 @@ interface OverviewPageProps {
 
 export default async function OrgOverviewPage({ params }: OverviewPageProps) {
   const { orgSlug } = await params;
-  const { org } = await getOrganizationAndMembership(orgSlug);
+  const { org, membership } = await getOrganizationAndMembership(orgSlug);
 
   const cacheKey = `dashboard:v2:${org.id}`;
   let dashboardData: any = null;
@@ -117,7 +118,16 @@ export default async function OrgOverviewPage({ params }: OverviewPageProps) {
   } = dashboardData;
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-8">
+      {/* GitHub Repository Connection Reminder (Only for OWNER & ADMIN) */}
+      <GitHubConnectionReminder
+        organizationId={org.id}
+        orgSlug={org.slug}
+        isGithubConnected={Boolean((org as any).githubInstallationId)}
+        githubRepo={(org as any).githubDefaultRepo || null}
+        userRole={membership.role}
+      />
+
       {/* Top Banner / Status Overview */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-zinc-900">
         <div className="space-y-1.5">

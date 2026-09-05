@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/auth";
 import { WarRoomChat } from "@/components/incidents/WarRoomChat";
+import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 import { getOrganizationAndMembership } from "@/lib/tenant";
 import {
   ArrowLeft,
@@ -144,8 +145,8 @@ export default async function IncidentPage({ params }: Props) {
                   <FileText className="h-3 w-3 text-emerald-400" /> Root Cause
                   Analysis
                 </label>
-                <div className="p-2.5 bg-black border border-zinc-900 text-[10px] text-zinc-300 font-mono whitespace-pre-wrap max-h-36 overflow-y-auto scrollbar-thin">
-                  {incident.rootCauseAnalysis}
+                <div className="p-3 bg-black border border-zinc-900 text-zinc-300 max-h-48 overflow-y-auto scrollbar-thin">
+                  <MarkdownRenderer content={incident.rootCauseAnalysis} />
                 </div>
               </div>
             )}

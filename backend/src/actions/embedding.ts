@@ -16,8 +16,11 @@ export async function getEmbeddingVectorString(
       model: model as any,
       value: text,
     });
+    
+    // Slice embedding to match schema dimensionality (736) - mathematically valid for Matryoshka models
+    const slicedEmbedding = embedding.slice(0, 736);
 
-    return `[${embedding.join(",")}]`;
+    return `[${slicedEmbedding.join(",")}]`;
   } catch (error) {
     throw new Error((error as Error).message);
   }
