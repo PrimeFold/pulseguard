@@ -191,3 +191,38 @@ Tenant boundaries and privileges are strictly isolated on the server level:
 - **Issue:** `[ioredis] Unhandled error event: AggregateError` in terminal logs.
 - **Cause:** Managed Redis services (e.g. Upstash) automatically terminate idle sockets after 30–60s. Node's EventEmitter flags this if no error listener is attached.
 - **Solution:** Attached a non-blocking `redis.on("error", ...)` handler in `lib/redis.ts` to allow automatic background reconnection without dumping unhandled event stacks.
+
+### 5. Elimination of Notification Polling Overhead
+
+- **Issue:** Continuous `setInterval` short-polling hammered `/api/notifications` every 60s, spamming terminal/Vercel logs with `GET /api/notifications 200`, wasting database connections on idle tabs, and throwing `net::ERR_CONNECTION_REFUSED` / `Failed to fetch` when the server was stopped.
+- **Cause:** High-frequency timer polling for low-frequency events (organization invites and incident approvals).
+- **Solution:** Replaced blind background polling in `components/notifications/NotificationPanel.tsx` with an On-Demand Event-Driven pattern:
+  1. Single fetch on initial mount to establish the badge count.
+  2. Background `setInterval` completely removed (zero idle server traffic).
+  3. Lazy re-fetch triggered when the user actually clicks the Bell icon to toggle the panel.
+  4. Single revalidation triggered when returning to the browser tab (`visibilitychange`).
+
+### 6. AI SDK Monorepo Model Specification Incompatibilities
+
+- **Issue:** `AI_UnsupportedModelVersionError: Unsupported model version v1 for provider "google.generative-ai". AI SDK 5 only supports specification version "v2"`.
+- **Cause:** After monorepo segregation into `frontend` and `backend`, `frontend` ran `ai@7.x` (expecting v2/v3 model specifications) while `backend` instantiated models using `@ai-sdk/google@1.x` and `ai@3.x` (producing v1 model shapes).
+- **Solution:** Synchronized all AI SDK dependencies across workspaces. Upgraded tool definitions in `backend/src/lib/ai/tools.ts` from deprecated `parameters` to the standard `inputSchema` property.
+
+### 7. Vector Database Dimensionality Inconsistencies (`pgvector`)
+
+- **Issue:** `Raw query failed. Code: 22000. Message: expected 736 dimensions, not 3072`.
+- **Cause:** PostgreSQL schema defined `DocumentChunk.embedding` with a fixed column width of `vector(736)`, while modern embedding providers output larger matrices (such as 3072 from large models).
+- **Solution:** Applied Matryoshka Representation Learning (MRL) truncation (`.slice(0, 736)`) across document ingestion and semantic search queries, eliminating destructive database schema migrations while maintaining semantic clustering accuracy.
+
+### 8. Client Auth Origin Resolution in Production (Vercel)
+
+- **Issue:** `POST http://localhost:3000/api/auth/sign-in/email net::ERR_CONNECTION_REFUSED` in live Vercel deployments.
+- **Cause:** `auth-client.ts` had a hardcoded `|| "http://localhost:3000"` fallback which the browser used when server environment variables were not exposed with `NEXT_PUBLIC_`.
+- **Solution:** Initialized `createAuthClient()` with no hardcoded fallback, allowing Better Auth to infer and use `window.location.origin` natively in the client.
+
+### 9. Workspace Monorepo `.env` Discovery
+
+- **Issue:** `PrismaClientKnownRequestError: ECONNREFUSED` on database queries during local development.
+- **Cause:** In an npm workspaces layout, Next.js starts from the `frontend/` directory and only reads environment files in its own directory, ignoring the root `.env`.
+- **Solution:** Mirrored the environment configuration into `frontend/.env` with explicit `NEXT_PUBLIC_` prefixes for client-facing variables (such as `NEXT_PUBLIC_GITHUB_APP_SLUG`).
+

@@ -82,7 +82,7 @@ export function OrgSidebar({
             <ArrowLeftRight className="h-3 w-3 text-zinc-600 group-hover:text-white shrink-0 transition-colors" />
           </Link>
           <div className="shrink-0 bg-zinc-950 border border-zinc-800 flex items-center justify-center">
-            <NotificationPanel />
+            <NotificationPanel align="left" />
           </div>
         </div>
 
