@@ -71,53 +71,53 @@ export function DiffApprovalCard({
   };
 
   return (
-    <div className="mt-2.5 border border-zinc-800 bg-zinc-950 p-3 font-mono text-xs space-y-2.5 rounded-none">
+    <div className="mt-2.5 border border-zinc-800 bg-zinc-950 p-3.5 font-mono text-xs space-y-3 rounded-none">
       {/* Header Strip */}
-      <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2 text-[10px]">
-        <div className="flex items-center gap-1.5 text-zinc-300">
-          <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-          <span className="font-semibold uppercase tracking-wider">
+      <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2.5 text-xs">
+        <div className="flex items-center gap-2 text-zinc-200 font-semibold">
+          <ShieldCheck className="h-4 w-4 text-emerald-400" />
+          <span className="uppercase tracking-wider">
             Remediation Patch
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-zinc-400 bg-zinc-900 px-1.5 py-0.5 border border-zinc-800">
+          <span className="text-zinc-300 bg-zinc-900 px-2 py-0.5 border border-zinc-800 text-xs">
             {filePath}
           </span>
           <button
             onClick={handleCopy}
-            className="p-1 hover:bg-zinc-800 text-zinc-500 hover:text-white transition-colors cursor-pointer"
+            className="p-1 hover:bg-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer"
             title="Copy Diff"
           >
             {copied ? (
-              <Check className="h-3 w-3 text-emerald-400" />
+              <Check className="h-3.5 w-3.5 text-emerald-400" />
             ) : (
-              <Copy className="h-3 w-3" />
+              <Copy className="h-3.5 w-3.5" />
             )}
           </button>
         </div>
       </div>
 
       {/* Explanation */}
-      <p className="text-zinc-400 text-[11px] font-sans leading-relaxed">
+      <p className="text-zinc-300 text-xs sm:text-sm font-sans leading-relaxed">
         {explanation}
       </p>
 
       {/* Code / Diff Preview */}
-      <div className="relative bg-black p-2.5 font-mono text-[10px] text-emerald-400 border border-zinc-900 overflow-x-auto max-h-48 scrollbar-thin">
+      <div className="relative bg-black p-3 font-mono text-xs text-emerald-400 border border-zinc-900 overflow-x-auto max-h-56 scrollbar-thin">
         <pre className="whitespace-pre">{patch}</pre>
       </div>
 
       {/* Error state */}
       {status === "error" && (
-        <p className="text-red-400 text-[10px] bg-red-950/20 border border-red-900/40 p-2">
+        <p className="text-red-400 text-xs bg-red-950/20 border border-red-900/40 p-2.5">
           Error: {errorMessage}
         </p>
       )}
 
       {/* Action Footer */}
-      <div className="flex items-center justify-between pt-1">
-        <span className="text-[9px] text-zinc-600 uppercase tracking-widest">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-1">
+        <span className="text-[10px] sm:text-xs font-mono text-zinc-500 uppercase tracking-wider">
           Sign-off required for git merge
         </span>
 
@@ -126,26 +126,26 @@ export function DiffApprovalCard({
             href={prUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-mono font-bold tracking-wider uppercase transition-colors"
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-mono font-bold tracking-wider uppercase transition-colors"
           >
-            <CheckCircle2 className="h-3 w-3" />
-            PR CREATED <ExternalLink className="h-2.5 w-2.5 ml-0.5" />
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            PR CREATED <ExternalLink className="h-3 w-3 ml-0.5" />
           </a>
         ) : (
           <Button
             size="sm"
             onClick={handleApprove}
             disabled={status === "submitting"}
-            className="h-7 text-[10px] px-3 gap-1.5 bg-white hover:bg-zinc-200 text-black font-mono font-bold tracking-wider uppercase rounded-none transition-all active:scale-[0.98] cursor-pointer"
+            className="h-8 text-xs px-3.5 gap-2 bg-white hover:bg-zinc-200 text-black font-mono font-bold tracking-wider uppercase rounded-none transition-all active:scale-[0.98] cursor-pointer"
           >
             {status === "submitting" ? (
               <>
-                <Loader2 className="h-3 w-3 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 DRAFTING PR...
               </>
             ) : (
               <>
-                <GitPullRequest className="h-3 w-3" />
+                <GitPullRequest className="h-3.5 w-3.5" />
                 APPROVE & OPEN PR
               </>
             )}

@@ -130,12 +130,12 @@ export default async function OrgOverviewPage({ params }: OverviewPageProps) {
 
       {/* Top Banner / Status Overview */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-zinc-900">
-        <div className="space-y-1.5">
-          <h1 className="text-3xl font-mono tracking-tighter text-white uppercase flex items-center gap-3">
-            <Activity className="h-6 w-6 text-emerald-500" /> SRE Telemetry Grid
+        <div className="space-y-2">
+          <h1 className="text-2xl sm:text-3xl font-mono tracking-tighter text-white uppercase flex items-center gap-3 font-bold">
+            <Activity className="h-6 w-6 sm:h-7 sm:w-7 text-emerald-500 shrink-0" /> SRE Telemetry Grid
           </h1>
-          <p className="text-[11px] font-mono text-zinc-500 tracking-widest uppercase">
-            Cluster metrics / {org.name} / Live Monitoring
+          <p className="text-xs sm:text-sm font-mono text-zinc-400 tracking-wider uppercase">
+            Cluster metrics / <span className="text-zinc-200 font-semibold">{org.name}</span> / Live Monitoring
           </p>
         </div>
 
@@ -143,13 +143,13 @@ export default async function OrgOverviewPage({ params }: OverviewPageProps) {
           <Link
             href={`/${org.slug}/incidents/${openIncidents[0].id}`}
             prefetch={true}
-            className="group flex items-center justify-between gap-4 px-4 py-3 bg-red-950/20 border border-red-900/50 hover:bg-red-900/30 transition-all rounded-none active:scale-[0.98]"
+            className="group flex items-center justify-between gap-4 px-5 py-3.5 bg-red-950/30 border border-red-900/60 hover:bg-red-900/40 transition-all rounded-none active:scale-[0.98] shrink-0"
           >
-            <div className="flex items-center gap-3 text-red-500 font-mono text-xs font-bold uppercase tracking-widest">
-              <Flame className="h-4 w-4 animate-pulse" />
+            <div className="flex items-center gap-3 text-red-400 font-mono text-xs sm:text-sm font-bold uppercase tracking-wider">
+              <Flame className="h-4 w-4 animate-pulse text-red-500" />
               <span>Talk to AI Agent</span>
             </div>
-            <ArrowRight className="h-4 w-4 text-red-500 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="h-4 w-4 text-red-400 group-hover:translate-x-1 transition-transform" />
           </Link>
         )}
       </div>

@@ -226,3 +226,9 @@ Tenant boundaries and privileges are strictly isolated on the server level:
 - **Cause:** In an npm workspaces layout, Next.js starts from the `frontend/` directory and only reads environment files in its own directory, ignoring the root `.env`.
 - **Solution:** Mirrored the environment configuration into `frontend/.env` with explicit `NEXT_PUBLIC_` prefixes for client-facing variables (such as `NEXT_PUBLIC_GITHUB_APP_SLUG`).
 
+### 10. Mobile Viewport 980px Emulation & Responsive Typography Scaling
+
+- **Issue:** On mobile and tablet viewports, the interface appeared miniature, zoomed out, and horizontally clipped. The desktop sidebar occupied ~70% of phone screens, and incident diagnostics/payloads were cut off.
+- **Cause:** In Next.js 14+ App Router, omitting `export const viewport: Viewport` in `layout.tsx` causes mobile WebKit/Blink browsers to simulate a 980px desktop screen, scaling the page down to fit. Additionally, primary labels used micro-utilities (`text-[9px]`, `text-[10px]`), and two-column SRE war rooms had no mobile tab/drawer strategy.
+- **Solution:** Exported `width: "device-width", initialScale: 1` in `frontend/app/layout.tsx`, implemented a responsive slide-out mobile drawer in `DashboardShell.tsx`, converted metric strips into responsive 2x2 to 4x1 grids, added segmented mobile controls for SRE War Room (`WarRoomClientContainer`), scaled typography to crisp `text-xs`/`text-sm` baselines, and built an aerospace-grade cybernetic HUD loader (`GlobalLoader.tsx`).
+

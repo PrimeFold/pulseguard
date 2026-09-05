@@ -22,18 +22,25 @@ export default function OrgDashboardLoading() {
       </div>
 
       {/* 1. Metric Strip Structure */}
-      <div className="grid grid-cols-1 md:grid-cols-4 border-t border-b border-zinc-900 divide-y md:divide-y-0 md:divide-x divide-zinc-900 bg-zinc-950/40">
+      <div className="grid grid-cols-2 lg:grid-cols-4 border border-zinc-900 bg-zinc-950/40">
         {[
           { label: "Active Alerts" },
           { label: "Resolved Incidents" },
           { label: "Telemetry Events (24h)" },
           { label: "Cluster Status" },
         ].map((item, idx) => (
-          <div key={idx} className="p-5 space-y-2">
-            <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
+          <div
+            key={idx}
+            className={`p-4 sm:p-5 space-y-2 ${
+              idx % 2 === 0 ? "border-r border-zinc-900" : ""
+            } ${idx < 2 ? "border-b lg:border-b-0 border-zinc-900" : ""} ${
+              idx === 1 ? "lg:border-r" : ""
+            }`}
+          >
+            <p className="text-xs font-mono text-zinc-400 uppercase tracking-widest font-medium">
               {item.label}
             </p>
-            <div className="h-7 w-20 bg-zinc-900/60 border border-zinc-800/60 animate-pulse" />
+            <div className="h-8 w-24 bg-zinc-900/60 border border-zinc-800/60 animate-pulse" />
           </div>
         ))}
       </div>
