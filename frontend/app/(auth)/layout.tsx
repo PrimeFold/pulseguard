@@ -1,11 +1,21 @@
 import Link from "next/link";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
 import { ShieldAlert, Terminal, Activity, Lock, Cpu } from "lucide-react";
 
-export default function AuthLayout({
+export default async function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // If user already has an active session, redirect immediately to the workspace console
+  const reqHeaders = await headers();
+  const session = await auth.api.getSession({ headers: reqHeaders }).catch(() => null);
+
+  if (session?.user) {
+    redirect("/workspaces");
+  }
   return (
     <div className="min-h-[100dvh] bg-[#09090b] text-zinc-100 flex flex-col justify-between selection:bg-white selection:text-black font-sans antialiased relative overflow-hidden">
       {/* Background Subtle Grid & Technical Vignette */}

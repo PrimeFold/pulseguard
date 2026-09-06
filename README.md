@@ -252,4 +252,14 @@ Tenant boundaries and privileges are strictly isolated on the server level:
   3. Upgraded `/api/telemetry/ingest` to accept both raw Organization IDs and SHA-256 hashed secret API keys (`sk_live_...`) across `Authorization: Bearer <key>`, `x-api-key: <key>`, and query parameter `?apiKey=<key>`.
   4. Built `IngestionView.tsx` with single-click endpoint/key copy, copy-paste snippets for cURL, Next.js, Node.js/Express, Python, and Vercel Log Drains, plus a live interactive "Send Test Telemetry Log" verifier.
 
+### 13. Public Landing Roaming & Active Session Auth Guards
+
+- **Issue:** Users with an already active session who navigated to `/login` or `/signup` from the public landing page or direct links were repeatedly presented with login/signup credential forms instead of being redirected to their workspace console.
+- **Cause:** Auth pages (`/login`, `/signup`) lacked server-side and client-side session checks, allowing authenticated users to needlessly re-enter credentials or see redundant auth forms.
+- **Solution:**
+  1. Maintained completely unauthenticated public access for the landing page (`/`), marketing sections, and documentation (`/docs`) so any user can freely roam the site.
+  2. Added server-side session evaluation in `frontend/app/(auth)/layout.tsx` with `redirect("/workspaces")` on active session discovery before rendering auth forms.
+  3. Added client-side `authClient.useSession()` watchers in `login/page.tsx` and `signup/page.tsx` with `router.replace("/workspaces")` for instantaneous client-side navigation.
+
+
 

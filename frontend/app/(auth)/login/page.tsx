@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
@@ -21,6 +21,7 @@ import { useGSAP } from "@gsap/react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { data: session, isPending } = authClient.useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -28,6 +29,13 @@ export default function LoginPage() {
   const [error, setError] = useState("");
 
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // If already authenticated, redirect to workspaces immediately
+  useEffect(() => {
+    if (!isPending && session?.user) {
+      router.replace("/workspaces");
+    }
+  }, [session, isPending, router]);
   const formBoxRef = useRef<HTMLDivElement>(null);
   const asideBoxRef = useRef<HTMLDivElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
