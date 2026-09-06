@@ -46,33 +46,50 @@ export async function GET(req:NextRequest){
     }
 
     const installationId = parseInt(installationIdStr, 10);
+    let defaultRepoName: string | null = null;
+    let defaultRepoOwner: string | null = null;
+    let octokitErrorMessage: string | null = null;
+
     try {
-        // 1. Authenticate as the newly installed tenant
-        const octokit = getInstallationOctokit(installationId);
+      // 1. Authenticate as the newly installed tenant
+      const octokit = getInstallationOctokit(installationId);
 
-        //2. Fetch the repositories the user granted access to : 
-        const {data} = await octokit.rest.apps.listReposAccessibleToInstallation();
-        const defaultRepo = data.repositories[0];
+      // 2. Fetch the repositories the user granted access to
+      const { data } = await octokit.rest.apps.listReposAccessibleToInstallation();
+      const defaultRepo = data.repositories?.[0];
+      if (defaultRepo) {
+        defaultRepoName = defaultRepo.name;
+        defaultRepoOwner = defaultRepo.owner?.login || null;
+      }
+    } catch (octokitErr: any) {
+      console.error("Octokit error during GitHub callback:", octokitErr);
+      octokitErrorMessage = octokitErr.message || "Failed to query accessible repos";
+    }
 
-        //3. Linking this installation to the current user's organization in DB
-        const updatedOrg = await prisma.organization.update({
-            where: {
-                id: targetOrgId
-            },
-            data: {
-                githubInstallationId: installationId,
-                githubDefaultRepo: defaultRepo ? defaultRepo.name : null,
-                githubOwner: defaultRepo ? defaultRepo.owner.login : null,
-            }
-        });
+    try {
+      // 3. Always link this installation ID to the user's organization in DB
+      const updatedOrg = await prisma.organization.update({
+        where: { id: targetOrgId },
+        data: {
+          githubInstallationId: installationId,
+          githubDefaultRepo: defaultRepoName,
+          githubOwner: defaultRepoOwner,
+        }
+      });
 
-        return NextResponse.redirect(
-            new URL(`/${updatedOrg.slug}?github=connected`, req.url)
-        );
-    } catch (error) {
-        console.error('GitHub link error:', error);
-        return NextResponse.redirect(
-          new URL('/workspaces?error=github_link_failed', req.url)
-        );
+      const redirectUrl = new URL(`/${updatedOrg.slug}`, req.url);
+      if (octokitErrorMessage) {
+        redirectUrl.searchParams.set("github", "connected_with_warning");
+        redirectUrl.searchParams.set("warning", octokitErrorMessage);
+      } else {
+        redirectUrl.searchParams.set("github", "connected");
+      }
+
+      return NextResponse.redirect(redirectUrl);
+    } catch (dbError: any) {
+      console.error("Database update error in GitHub callback:", dbError);
+      return NextResponse.redirect(
+        new URL(`/workspaces?error=github_link_failed&reason=${encodeURIComponent(dbError?.message || "db_error")}`, req.url)
+      );
     }
 }
