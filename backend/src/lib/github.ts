@@ -3,15 +3,34 @@ import {createAppAuth} from '@octokit/auth-app';
 import { CreatePullRequestOptions } from '@/app/types/github';
 
 
+export function formatPrivateKey(rawKey: string | undefined): string {
+    if (!rawKey) return '';
+    let key = rawKey.trim();
+    // Strip surrounding quotes if present
+    if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
+        key = key.slice(1, -1);
+    }
+    // Replace literal escaped newlines (\n) with actual newlines
+    key = key.replace(/\\n/g, '\n');
+
+    // If key lacks PEM header, wrap it cleanly
+    if (!key.includes('BEGIN')) {
+        const cleaned = key.replace(/\s+/g, '');
+        const chunks = cleaned.match(/.{1,64}/g)?.join('\n') || cleaned;
+        return `-----BEGIN RSA PRIVATE KEY-----\n${chunks}\n-----END RSA PRIVATE KEY-----\n`;
+    }
+    return key;
+}
+
 export function getInstallationOctokit(installationId:number):Octokit{  
+    const privateKey = formatPrivateKey(process.env.GITHUB_APP_PRIVATE_KEY);
     return new Octokit({
         authStrategy: createAppAuth,
         auth:{
             appId:process.env.GITHUB_APP_ID!,
-            privateKey:process.env.GITHUB_APP_PRIVATE_KEY!,
+            privateKey,
             installationId
         }
-
     })
 }
 

@@ -11,6 +11,8 @@ import {
   Sparkles,
   ArrowLeftRight,
   Cpu,
+  Radio,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotificationPanel } from "@/components/notifications/NotificationPanel";
@@ -39,8 +41,10 @@ export function OrgSidebar({
     { label: "Overview", href: base, icon: Activity, exact: true },
     { label: "War Rooms", href: `${base}/incidents`, icon: Flame },
     { label: "Telemetry Logs", href: `${base}/telemetry`, icon: Terminal },
+    { label: "Ingestion API", href: `${base}/ingestion`, icon: Radio },
     { label: "AI & Models", href: `${base}/settings/ai`, icon: Sparkles },
     { label: "Team & Access", href: `${base}/settings/teams`, icon: Users },
+    { label: "Settings", href: `${base}/settings`, icon: Settings, exact: true },
   ];
 
   useGSAP(

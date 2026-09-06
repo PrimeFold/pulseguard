@@ -40,10 +40,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing API Key" }, { status: 401 });
     }
 
-    //Verifying the organization against the API KEY..
-    const org = await prisma.organization.findFirst({
+    // Verifying the organization against the API KEY (supports org ID or sk_live_... API key)
+    let org = await prisma.organization.findFirst({
       where: { id: apiKey },
     });
+
+    if (!org) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(apiKey);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const keyHash = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+
+      org = await prisma.organization.findFirst({
+        where: { apiKeyHash: keyHash },
+      });
+    }
 
     if (!org) {
       return NextResponse.json({ error: "Invalid API Key" }, { status: 403 });

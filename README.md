@@ -232,3 +232,24 @@ Tenant boundaries and privileges are strictly isolated on the server level:
 - **Cause:** In Next.js 14+ App Router, omitting `export const viewport: Viewport` in `layout.tsx` causes mobile WebKit/Blink browsers to simulate a 980px desktop screen, scaling the page down to fit. Additionally, primary labels used micro-utilities (`text-[9px]`, `text-[10px]`), and two-column SRE war rooms had no mobile tab/drawer strategy.
 - **Solution:** Exported `width: "device-width", initialScale: 1` in `frontend/app/layout.tsx`, implemented a responsive slide-out mobile drawer in `DashboardShell.tsx`, converted metric strips into responsive 2x2 to 4x1 grids, added segmented mobile controls for SRE War Room (`WarRoomClientContainer`), scaled typography to crisp `text-xs`/`text-sm` baselines, and built an aerospace-grade cybernetic HUD loader (`GlobalLoader.tsx`).
 
+### 11. GitHub App Installation Redirect & Reconfiguration Callback Flow
+
+- **Issue:** After selecting a repository to attach to the organization, the user was navigated to `https://github.com/settings/installations/<installation_id>` on GitHub instead of returning to the PulseGuard dashboard.
+- **Cause:** 
+  1. The GitHub App's "Setup URL" was configured to point to production (`https://pulseguard-app-navy.vercel.app/api/integrations/github/callback`), whereas the user was testing on `localhost:3000` (meaning session cookies did not match the cloud host), or "Redirect on update" was disabled in GitHub App settings.
+  2. When an app has already been installed on an account previously, selecting new repositories is treated by GitHub as an "Update / Configure" action, which defaults to keeping the user on `https://github.com/settings/installations/<id>` rather than triggering a new setup redirect.
+- **Solution:** 
+  1. Added a session-based organization resolution fallback in `/api/integrations/github/callback` so re-configuration redirects without a `state` parameter still link to the user's active workspace.
+  2. Built a direct "Link Installation ID" tool in `GitHubIntegrationCard.tsx` powered by a server action (`linkGithubInstallation`). Users can enter their numeric installation ID (e.g. `159566367`) to immediately sync authorized repositories to their organization without relying on browser redirects.
+
+### 12. Direct Telemetry Ingestion Endpoint & Multi-Platform Integration
+
+- **Issue:** After creating an organization, users needed immediate access to their dedicated telemetry ingestion endpoint URL and workspace API keys to configure their deployed microservices, Next.js apps, Docker containers, and Vercel log forwarders.
+- **Cause:** Ingestion keys were buried inside global settings without copy-paste platform snippets, an interactive ping verifier, or prominent navigation in the organization sidebar. Furthermore, `/api/telemetry/ingest` only verified raw organization IDs and rejected rotatable secret keys (`sk_live_...`).
+- **Solution:**
+  1. Built a dedicated workspace route `/[orgSlug]/ingestion` and added `Ingestion API` to the primary navigation in `OrgSidebar.tsx`.
+  2. Enhanced `CreateWorkspaceForm.tsx` step 2 to provide direct 1-click navigation to the Ingestion configuration page upon workspace provisioning.
+  3. Upgraded `/api/telemetry/ingest` to accept both raw Organization IDs and SHA-256 hashed secret API keys (`sk_live_...`) across `Authorization: Bearer <key>`, `x-api-key: <key>`, and query parameter `?apiKey=<key>`.
+  4. Built `IngestionView.tsx` with single-click endpoint/key copy, copy-paste snippets for cURL, Next.js, Node.js/Express, Python, and Vercel Log Drains, plus a live interactive "Send Test Telemetry Log" verifier.
+
+

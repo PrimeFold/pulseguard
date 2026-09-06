@@ -4,16 +4,36 @@ import { requireOrganizationRole } from '@/lib/authorization';
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req:NextRequest){
-    const {searchParams } = new URL(req.url);
+    const { searchParams } = new URL(req.url);
     const installationIdStr = searchParams.get('installation_id');
-    if(!installationIdStr){
-        return NextResponse.redirect(new URL('/dashboard/settings?error=missing_installation_id',req.url));
+    if (!installationIdStr) {
+      return NextResponse.redirect(new URL('/workspaces?error=missing_installation_id', req.url));
     }
-    const targetOrgId = searchParams.get('state');
 
-    if (!installationIdStr || !targetOrgId) {
+    let targetOrgId = searchParams.get('state');
+
+    // Fallback: If GitHub dropped the state parameter (e.g. during reconfigure), infer from current session
+    if (!targetOrgId) {
+      try {
+        const { auth } = await import("@/lib/auth");
+        const session = await auth.api.getSession({ headers: req.headers });
+        if (session?.user) {
+          const member = await prisma.organizationMember.findFirst({
+            where: { userId: session.user.id, role: { in: ['OWNER', 'ADMIN'] } },
+            orderBy: { createdAt: 'desc' },
+          });
+          if (member) {
+            targetOrgId = member.organizationId;
+          }
+        }
+      } catch (err) {
+        console.error("Session fallback error:", err);
+      }
+    }
+
+    if (!targetOrgId) {
       return NextResponse.redirect(
-        new URL('/dashboard/settings?error=missing_params', req.url)
+        new URL('/workspaces?error=missing_target_organization', req.url)
       );
     }
 
@@ -21,8 +41,8 @@ export async function GET(req:NextRequest){
       await requireOrganizationRole(targetOrgId, ['OWNER', 'ADMIN'], req.headers);
     } catch {
       return NextResponse.redirect(
-            new URL('/dashboard/settings?error=unauthorized_organization', req.url)
-        );
+        new URL('/workspaces?error=unauthorized_organization', req.url)
+      );
     }
 
     const installationId = parseInt(installationIdStr, 10);

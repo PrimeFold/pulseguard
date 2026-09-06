@@ -13,6 +13,7 @@ import {
   ExternalLink,
   ShieldCheck,
   GitFork,
+  Radio,
 } from "lucide-react";
 import { FaGithub } from "react-icons/fa6";
 import { Input } from "@/components/ui/input";
@@ -132,15 +133,26 @@ export function CreateWorkspaceForm() {
               </a>
             </Button>
 
-            {/* Secondary Action: Skip for now */}
+            {/* Option 2: Go directly to Log Ingestion & Endpoint setup */}
             <Button
               type="button"
               variant="outline"
-              onClick={() => router.push(`/${createdOrg.slug}`)}
-              className="w-full bg-transparent hover:bg-zinc-900 text-zinc-400 hover:text-white border-zinc-800 font-mono text-xs uppercase tracking-wider rounded-none h-10 transition-colors cursor-pointer"
+              onClick={() => router.push(`/${createdOrg.slug}/ingestion`)}
+              className="w-full bg-zinc-950 hover:bg-zinc-900 text-emerald-400 hover:text-emerald-300 border-emerald-900/60 font-mono text-xs uppercase tracking-wider rounded-none h-11 transition-colors cursor-pointer flex items-center justify-center gap-2"
             >
-              Skip for now & go to dashboard
-              <ArrowRight className="ml-2 h-3.5 w-3.5" />
+              <Radio className="h-3.5 w-3.5" />
+              Configure Log Ingestion Endpoint
+              <ArrowRight className="ml-1 h-3.5 w-3.5" />
+            </Button>
+
+            {/* Option 3: Skip to overview dashboard */}
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => router.push(`/${createdOrg.slug}`)}
+              className="w-full bg-transparent hover:bg-zinc-900 text-zinc-500 hover:text-zinc-300 font-mono text-[11px] uppercase tracking-wider rounded-none h-9 transition-colors cursor-pointer"
+            >
+              Skip to Overview Dashboard
             </Button>
 
             <p className="text-[10px] font-mono text-zinc-600 text-center pt-1">
