@@ -91,44 +91,70 @@ export async function deleteOrganization(data: { id: string }) {
 }
 
 export async function linkGithubInstallation(data: { organizationId: string; installationId: number }) {
-  const user = await getUser();
-  if (!user) throw new Error("Unauthorized");
-
-  const membership = await prisma.organizationMember.findUnique({
-    where: {
-      userId_organizationId: {
-        organizationId: data.organizationId,
-        userId: user.id,
-      }
-    },
-    include: { organization: true }
-  });
-
-  if (!membership || (membership.role !== "OWNER" && membership.role !== "ADMIN")) {
-    throw new Error("Unauthorized to configure GitHub integrations for this workspace.");
-  }
-
-  const { getInstallationOctokit } = await import("@/lib/github");
-  const octokit = getInstallationOctokit(data.installationId);
-  const { data: reposData } = await octokit.rest.apps.listReposAccessibleToInstallation();
-  const defaultRepo = reposData.repositories[0];
-
-  const updatedOrg = await prisma.organization.update({
-    where: { id: data.organizationId },
-    data: {
-      githubInstallationId: data.installationId,
-      githubDefaultRepo: defaultRepo ? defaultRepo.name : null,
-      githubOwner: defaultRepo ? defaultRepo.owner.login : null,
+  try {
+    const user = await getUser();
+    if (!user) {
+      return { success: false, error: "Unauthorized. Please sign in to link GitHub." };
     }
-  });
 
-  revalidatePath(`/${updatedOrg.slug}/settings`);
-  revalidatePath(`/${updatedOrg.slug}`);
-  revalidatePath("/workspaces");
+    const membership = await prisma.organizationMember.findUnique({
+      where: {
+        userId_organizationId: {
+          organizationId: data.organizationId,
+          userId: user.id,
+        }
+      },
+      include: { organization: true }
+    });
 
-  return {
-    success: true,
-    org: updatedOrg,
-    repoName: defaultRepo ? `${defaultRepo.owner.login}/${defaultRepo.name}` : null,
-  };
+    if (!membership || (membership.role !== "OWNER" && membership.role !== "ADMIN")) {
+      return { success: false, error: "Unauthorized. Only Organization Owners and Admins can configure GitHub integrations." };
+    }
+
+    let defaultRepoName: string | null = null;
+    let defaultRepoOwner: string | null = null;
+
+    try {
+      const { getInstallationOctokit } = await import("@/lib/github");
+      const octokit = getInstallationOctokit(data.installationId);
+      const { data: reposData } = await octokit.rest.apps.listReposAccessibleToInstallation();
+      const defaultRepo = reposData.repositories?.[0];
+      if (defaultRepo) {
+        defaultRepoName = defaultRepo.name;
+        defaultRepoOwner = defaultRepo.owner?.login || null;
+      }
+    } catch (octokitErr: any) {
+      console.error("Octokit error linking GitHub installation:", octokitErr);
+      const statusMsg = octokitErr.status ? ` (Status ${octokitErr.status})` : "";
+      return {
+        success: false,
+        error: `GitHub App Authentication failed${statusMsg}: ${octokitErr.message || "Integration not found"}. Please verify that GITHUB_APP_ID and GITHUB_APP_PRIVATE_KEY on Vercel match your GitHub App settings.`,
+      };
+    }
+
+    const updatedOrg = await prisma.organization.update({
+      where: { id: data.organizationId },
+      data: {
+        githubInstallationId: data.installationId,
+        githubDefaultRepo: defaultRepoName,
+        githubOwner: defaultRepoOwner,
+      }
+    });
+
+    revalidatePath(`/${updatedOrg.slug}/settings`);
+    revalidatePath(`/${updatedOrg.slug}`);
+    revalidatePath("/workspaces");
+
+    return {
+      success: true,
+      org: updatedOrg,
+      repoName: defaultRepoName && defaultRepoOwner ? `${defaultRepoOwner}/${defaultRepoName}` : defaultRepoName,
+    };
+  } catch (err: any) {
+    console.error("linkGithubInstallation server error:", err);
+    return {
+      success: false,
+      error: err.message || "An unexpected error occurred while linking GitHub installation.",
+    };
+  }
 }

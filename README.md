@@ -261,5 +261,18 @@ Tenant boundaries and privileges are strictly isolated on the server level:
   2. Added server-side session evaluation in `frontend/app/(auth)/layout.tsx` with `redirect("/workspaces")` on active session discovery before rendering auth forms.
   3. Added client-side `authClient.useSession()` watchers in `login/page.tsx` and `signup/page.tsx` with `router.replace("/workspaces")` for instantaneous client-side navigation.
 
+### 14. Server Action Error Masking & GitHub Integration Resilience
+
+- **Issue:** Submitting a GitHub Installation ID in Workspace Settings triggered `POST /[orgSlug]/settings 500 (Internal Server Error)` and client-side `Minified React error #441`, leaving the workspace unlinked and obscuring the root cause.
+- **Cause:** 
+  1. Next.js App Router in production hides raw server exception messages and stack traces to prevent sensitive information disclosure. When `linkGithubInstallation` threw an uncaught error from `@octokit/auth-app`, Next.js intercepted the rejection and emitted an HTTP 500 status code, causing React 19 production builds to render error boundary #441.
+  2. Octokit failed during JWT token generation because raw `GITHUB_APP_PRIVATE_KEY` values pasted into cloud provider consoles (e.g. Vercel) often lack standard RSA PEM headers (`-----BEGIN RSA PRIVATE KEY-----`) or contain escaped `\n` characters that trigger Node WebCrypto ASN.1 parsing errors (`DOMException [DataError]: Invalid keyData`).
+  3. Mismatches between `GITHUB_APP_ID` and the private key resulted in GitHub API `404 Integration not found` responses during installation token exchanges.
+- **Solution:**
+  1. Wrapped `linkGithubInstallation` in `backend/src/actions/organization.ts` with defensive try/catch blocks that return structured `{ success: false, error: ... }` payloads instead of throwing unhandled exceptions across the server-action boundary.
+  2. Enhanced `GithubIntegrationCard.tsx` to display human-readable inline error feedback directly in the UI without triggering React error boundaries.
+  3. Added `formatPrivateKey()` in `backend/src/lib/github.ts` to automatically normalize raw Base64 strings, chunk 64-character lines, wrap valid RSA PEM headers, and unescape literal newlines.
+
+
 
 

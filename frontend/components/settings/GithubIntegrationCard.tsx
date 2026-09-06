@@ -60,6 +60,8 @@ export function GitHubIntegrationCard({
       if (res.success) {
         setLinkSuccess(`Successfully connected to ${res.repoName || "repository"}!`);
         router.refresh();
+      } else {
+        setLinkError(res.error || "Failed to link installation ID.");
       }
     } catch (err: any) {
       setLinkError(err.message || "Failed to link installation ID. Make sure the app has access to your repo.");
