@@ -141,6 +141,17 @@ export async function linkGithubInstallation(data: { organizationId: string; ins
       }
     });
 
+    // Invalidate Redis tenant cache so the new githubInstallationId is read immediately
+    try {
+      const { redis } = await import("@/lib/redis");
+      const keys = await redis.keys(`tenant:${updatedOrg.slug}:*`);
+      if (keys && keys.length > 0) {
+        await redis.del(...keys);
+      }
+    } catch (redisErr) {
+      console.error("Redis cache invalidation error:", redisErr);
+    }
+
     revalidatePath(`/${updatedOrg.slug}/settings`);
     revalidatePath(`/${updatedOrg.slug}`);
     revalidatePath("/workspaces");

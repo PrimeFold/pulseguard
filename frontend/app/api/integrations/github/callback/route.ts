@@ -77,6 +77,17 @@ export async function GET(req:NextRequest){
         }
       });
 
+      // Invalidate Redis tenant cache so the updated githubInstallationId is immediately read
+      try {
+        const { redis } = await import("@/lib/redis");
+        const keys = await redis.keys(`tenant:${updatedOrg.slug}:*`);
+        if (keys && keys.length > 0) {
+          await redis.del(...keys);
+        }
+      } catch (redisErr) {
+        console.error("Redis cache invalidation error:", redisErr);
+      }
+
       const redirectUrl = new URL(`/${updatedOrg.slug}`, req.url);
       if (octokitErrorMessage) {
         redirectUrl.searchParams.set("github", "connected_with_warning");

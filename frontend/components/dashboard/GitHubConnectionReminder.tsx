@@ -28,10 +28,37 @@ export function GitHubConnectionReminder({
   userRole,
 }: Props) {
   const searchParams = useSearchParams();
-  const justConnected = searchParams.get("github") === "connected";
+  const githubStatus = searchParams.get("github");
+  const warningMsg = searchParams.get("warning");
+  const justConnected = githubStatus === "connected" || githubStatus === "connected_with_warning";
 
   // Only Owners and Admins are responsible for managing repo integrations
   const canManage = userRole === "OWNER" || userRole === "ADMIN";
+
+  // If connected with an Octokit warning (e.g. App ID mismatch)
+  if (githubStatus === "connected_with_warning") {
+    return (
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-amber-950/20 border border-amber-500/40 text-amber-300 font-mono text-xs">
+        <div className="flex items-center gap-3">
+          <ShieldAlert className="h-5 w-5 text-amber-400 shrink-0" />
+          <div>
+            <span className="font-bold uppercase tracking-wider block text-amber-200">
+              GitHub Installation Linked (Action Required)
+            </span>
+            <span className="text-[11px] text-amber-300/80">
+              Installation saved, but Octokit returned: <span className="font-bold underline">{warningMsg || "Integration not found"}</span>. Verify that <code className="bg-black px-1 text-amber-200">GITHUB_APP_ID</code> in Vercel environment variables is your actual App ID (not a user ID).
+            </span>
+          </div>
+        </div>
+        <Link
+          href={`/${orgSlug}/settings`}
+          className="text-[10px] uppercase tracking-widest text-amber-300 hover:text-white underline shrink-0"
+        >
+          Workspace Settings →
+        </Link>
+      </div>
+    );
+  }
 
   // If just connected via redirect callback, render a celebratory confirmation banner
   if (justConnected && isGithubConnected) {
