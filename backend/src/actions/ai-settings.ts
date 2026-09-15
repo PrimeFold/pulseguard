@@ -5,6 +5,7 @@ import { requireOrganizationRole } from "@/lib/authorization";
 import { encryptApiKey, maskApiKey } from "@/lib/ai/provider";
 import { redis } from "@/lib/redis";
 import { revalidatePath } from "next/cache";
+import { invalidateAiModelsCache } from "@/lib/cache-invalidation";
 
 export interface UpdateAiSettingsParams {
   organizationId: string;
@@ -64,6 +65,7 @@ export async function updateAiSettings(params: UpdateAiSettingsParams) {
 
   revalidatePath(`/${updatedOrg.slug}/settings/ai`);
   revalidatePath(`/${updatedOrg.slug}/settings`);
+  await invalidateAiModelsCache(params.organizationId, updatedOrg.slug);
 
   return {
     success: true,
@@ -87,6 +89,7 @@ export async function removeCustomAiKey(organizationId: string) {
   });
 
   revalidatePath(`/${updatedOrg.slug}/settings/ai`);
+  await invalidateAiModelsCache(organizationId, updatedOrg.slug);
   return { success: true };
 }
 

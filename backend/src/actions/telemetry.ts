@@ -7,6 +7,8 @@ import { Prisma, TelemetryLog } from "@/lib/generated/prisma/client";
 import type { Level } from "@/lib/generated/prisma/enums";
 import { revalidatePath } from "next/cache";
 import { requireOrganizationMembership } from "@/lib/authorization";
+import { invalidateTelemetryCache } from "@/lib/cache-invalidation";
+export { invalidateTelemetryCache };
 
 export async function logTelemetry(data: telemetryLog) {
   const sanitizedMetadata = JSON.stringify(data.metadata);
@@ -23,7 +25,7 @@ export async function logTelemetry(data: telemetryLog) {
       },
     });
 
-    revalidatePath("/dashboard/telemetry");
+    await invalidateTelemetryCache(data.organizationId);
 
     return {
       success: true,

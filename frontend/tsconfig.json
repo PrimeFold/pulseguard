@@ -58,6 +58,9 @@
                                                           ],
                                           "@/lib/session":  [
                                                                 "../backend/src/lib/session"
+                                                            ],
+                                          "@/lib/cache-invalidation":  [
+                                                                "../backend/src/lib/cache-invalidation"
                                                             ]
                                       }
                         },

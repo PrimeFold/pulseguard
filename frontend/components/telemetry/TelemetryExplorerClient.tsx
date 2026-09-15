@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import {
   Search,
   RefreshCw,
@@ -36,6 +36,7 @@ export function TelemetryExplorerClient({
   availableServices,
 }: Props) {
   const [logs, setLogs] = useState<TelemetryLogItem[]>(initialLogs);
+  const [services, setServices] = useState<string[]>(availableServices);
   const [selectedService, setSelectedService] = useState("ALL");
   const [selectedLevel, setSelectedLevel] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -43,6 +44,14 @@ export function TelemetryExplorerClient({
   const [isPending, startTransition] = useTransition();
   const listRef = useRef<HTMLDivElement>(null);
   const filterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setLogs(initialLogs);
+  }, [initialLogs]);
+
+  useEffect(() => {
+    setServices(availableServices);
+  }, [availableServices]);
 
   const handleFilter = () => {
     startTransition(async () => {
@@ -61,6 +70,9 @@ export function TelemetryExplorerClient({
               search: searchQuery,
             });
             setLogs(res.logs);
+            if (res.services) {
+              setServices(res.services);
+            }
           },
         });
       } else {
@@ -71,6 +83,9 @@ export function TelemetryExplorerClient({
           search: searchQuery,
         });
         setLogs(res.logs);
+        if (res.services) {
+          setServices(res.services);
+        }
       }
     });
   };
@@ -144,7 +159,7 @@ export function TelemetryExplorerClient({
             className="h-10 bg-black text-zinc-300 text-[10px] font-mono uppercase tracking-widest px-3 border-none focus:ring-0 appearance-none rounded-none cursor-pointer hover:bg-zinc-950 transition-colors"
           >
             <option value="ALL">ALL SERVICES</option>
-            {availableServices.map((srv) => (
+            {services.map((srv) => (
               <option key={srv} value={srv}>
                 {srv}
               </option>

@@ -5,6 +5,7 @@ import {
   requireOrganizationMembership,
   requireOrganizationRole,
 } from '@/lib/authorization';
+import { invalidateApiKeyCache } from '@/lib/cache-invalidation';
 
 // Helper: Generates secure hex strings using modern standard Web Crypto
 async function sha256(str:string):Promise<string>{
@@ -64,15 +65,20 @@ export async function generateApiKey(organizationId:string){
         const keyHash = await sha256(rawKey);
         const display = `${rawKey.slice(0,12)}...${rawKey.slice(-4)}`;
 
-        await prisma.organization.update({
+        const updatedOrg = await prisma.organization.update({
             where:{
                 id:organizationId
             },
             data:{
                 apiKeyDisplay:display,
                 apiKeyHash:keyHash
+            },
+            select: {
+                slug: true
             }
-        })
+        });
+
+        await invalidateApiKeyCache(organizationId, updatedOrg.slug);
 
         return{
             rawKey,

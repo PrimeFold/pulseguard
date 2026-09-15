@@ -9,6 +9,7 @@ import { embedMany } from "ai";
 import { revalidatePath } from "next/cache";
 import { requireOrganizationMembership } from '@/lib/authorization';
 import { redis } from "@/lib/redis";
+import { invalidateDocumentsCache } from "@/lib/cache-invalidation";
 
 export async function IngestDocument({
     organizationId,
@@ -67,7 +68,7 @@ export async function IngestDocument({
                 `
             }
 
-            revalidatePath('/dashboard/knowledge');
+            await invalidateDocumentsCache(organizationId);
             return {
                 success:true,
                 documentId:document.id,

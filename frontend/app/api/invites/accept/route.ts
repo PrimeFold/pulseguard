@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/auth";
 import { getUser } from "@/lib/session";
+import { invalidateTeamCache } from "@/lib/cache-invalidation";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -60,6 +61,9 @@ export async function POST(req: NextRequest) {
         data: { status: "ACCEPTED" },
       }),
     ]);
+
+    // Invalidate team members cache and notifications
+    await invalidateTeamCache(invite.organizationId, invite.organization.slug, user.id);
 
     return NextResponse.json({
       success: true,

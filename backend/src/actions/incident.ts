@@ -1,8 +1,9 @@
-﻿"use server";
+"use server";
 
 import { prisma } from "@/lib/auth";
 import { IngestDocument } from "./document";
 import { revalidatePath } from "next/cache";
+import { invalidateIncidentsCache, invalidateDocumentsCache } from "@/lib/cache-invalidation";
 import { IncidentStatus } from "@/lib/generated/prisma/enums";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { IncidentParams, ResolveIncidentParams } from "@/app/types/incident";
@@ -43,8 +44,8 @@ export async function resolveIncidentAndEmbedRCA({
       sourceUrl: `/dashboard/incidents/${incident.id}`,
     });
 
-    revalidatePath("/dashboard/incidents");
-    revalidatePath("/dashboard/knowledge");
+    await invalidateIncidentsCache(organizationId);
+    await invalidateDocumentsCache(organizationId);
 
     return {
       success: true,
@@ -96,7 +97,7 @@ export async function createIncidentAction(data: IncidentParams) {
       throw new Error("RCA couldn't be generated..");
     }
 
-    revalidatePath("/dashboard/incidents");
+    await invalidateIncidentsCache(data.organizationId);
     return {
       title,
       service,
@@ -193,7 +194,7 @@ export async function updateIncidentStatus(
         status,
       },
     });
-    revalidatePath("/dashboard/incidents");
+    await invalidateIncidentsCache(organizationId);
     return incident;
   } catch (error) {
     throw new Error((error as Error).message);

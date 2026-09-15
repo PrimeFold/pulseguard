@@ -3,6 +3,7 @@ import { generateErrorFingerprint } from "@/lib/telemetry";
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { redis } from "@/lib/redis";
+import { invalidateTelemetryCache, invalidateIncidentsCache } from "@/lib/cache-invalidation";
 import { z } from "zod";
 
 const ANOMALY_WINDOW_MINUTES = 3;
@@ -107,6 +108,7 @@ export async function POST(req: NextRequest) {
     const windowStart = new Date(
       Date.now() - ANOMALY_WINDOW_MINUTES * 60 * 1000,
     );
+    let hasNewIncident = false;
 
     for (const [fingerprint, logs] of errorGroups.entries()) {
       const sample = logs[0];
@@ -156,6 +158,7 @@ export async function POST(req: NextRequest) {
             },
             select: { id: true }
           });
+          hasNewIncident = true;
           await redis.setex(cacheKey, 300, incident.id);
         }
       }
@@ -174,7 +177,13 @@ export async function POST(req: NextRequest) {
       data: processedLogs.map(({ cleanPattern, ...log }) => log),
     });
 
-    // 4. Asynchronously prune logs older than 7 days to enforce auto-TTL without blocking response
+    // 4. Invalidate telemetry and incident caches immediately
+    await invalidateTelemetryCache(org.id, org.slug);
+    if (hasNewIncident) {
+      await invalidateIncidentsCache(org.id, org.slug);
+    }
+
+    // 5. Asynchronously prune logs older than 7 days to enforce auto-TTL without blocking response
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     prisma.telemetryLog.deleteMany({
       where: {

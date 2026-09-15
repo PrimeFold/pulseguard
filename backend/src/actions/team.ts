@@ -6,6 +6,7 @@ import { TeamParams } from "@/app/types/team";
 import { prisma } from "@/lib/auth";
 import { requireOrganizationMembership } from "@/lib/authorization";
 import { OrganizationMember, Prisma } from "@/lib/generated/prisma/client";
+import { invalidateTeamCache } from "@/lib/cache-invalidation";
 
 export type OrganizationMemberWithUser = Prisma.OrganizationMemberGetPayload<{
   include: {
@@ -132,16 +133,15 @@ export async function updateMemberRole(params: {
     },
   });
 
-  // ⚡ Immediately invalidate active sessions for target user so next request pulls the new role
+  // ⚡ Immediately invalidate active sessions and caches for target user
   try {
     await prisma.session.deleteMany({
       where: { userId: params.targetUserId },
     });
-    const { redis } = await import("@/lib/redis");
-    await redis.del(`notifications:user:${params.targetUserId}`);
   } catch (err) {
     // Non-blocking cleanup
   }
+  await invalidateTeamCache(params.organizationId, undefined, params.targetUserId);
 
   return { success: true, member: updated };
 }
@@ -181,16 +181,15 @@ export async function removeMemberFromOrg(params: {
     },
   });
 
-  // ⚡ Immediately invalidate active sessions for removed user
+  // ⚡ Immediately invalidate active sessions and caches for removed user
   try {
     await prisma.session.deleteMany({
       where: { userId: params.targetUserId },
     });
-    const { redis } = await import("@/lib/redis");
-    await redis.del(`notifications:user:${params.targetUserId}`);
   } catch (err) {
     // Non-blocking cleanup
   }
+  await invalidateTeamCache(params.organizationId, undefined, params.targetUserId);
 
   return { success: true };
 }

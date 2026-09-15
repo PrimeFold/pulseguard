@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/auth";
 import { getUser } from "@/lib/session";
 import { revalidatePath } from "next/cache";
+import { invalidateTenantCache } from "@/lib/cache-invalidation";
 
 export async function createOrganization(data: { name: string; slug: string }) {
   const user = await getUser();
@@ -59,8 +60,7 @@ export async function updateOrganization(data: { id: string; name: string }) {
     data: { name: data.name },
   });
 
-  revalidatePath(`/${org.slug}/settings`);
-  revalidatePath("/workspaces");
+  await invalidateTenantCache(org.slug);
   return { success: true, org };
 }
 
@@ -82,11 +82,13 @@ export async function deleteOrganization(data: { id: string }) {
     throw new Error("Only the workspace owner can delete it.");
   }
 
+  const slug = membership.organization.slug;
+
   await prisma.organization.delete({
     where: { id: data.id }
   });
 
-  revalidatePath("/workspaces");
+  await invalidateTenantCache(slug);
   return { success: true };
 }
 
