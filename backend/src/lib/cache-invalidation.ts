@@ -95,6 +95,26 @@ export async function invalidateTelemetryCache(organizationId: string, slug?: st
   safeRevalidatePaths(paths);
 }
 
+export async function invalidateOrgNotificationCache(organizationId: string): Promise<void> {
+  try {
+    const { prisma } = await import("@/lib/auth");
+    const adminMembers = await prisma.organizationMember.findMany({
+      where: {
+        organizationId,
+        role: { in: ["ADMIN", "OWNER"] },
+      },
+      select: { userId: true },
+    });
+
+    if (adminMembers.length > 0) {
+      const keys = adminMembers.map((m) => `notifications:user:${m.userId}`);
+      await redis.del(...keys);
+    }
+  } catch (err) {
+    console.warn("[Redis] Failed to invalidate org notification cache:", err);
+  }
+}
+
 /**
  * Invalidate Incidents Cache (`incidents:list:${orgId}:*` and `dashboard:v2:${orgId}`).
  * Triggered on incident creation, status updates, and resolutions.
@@ -105,6 +125,7 @@ export async function invalidateIncidentsCache(organizationId: string, slug?: st
     redis.del(`dashboard:v2:${organizationId}`).catch((err) =>
       console.error(`[Redis] Failed to delete dashboard cache for org ${organizationId}:`, err)
     ),
+    invalidateOrgNotificationCache(organizationId),
   ]);
 
   const resolvedSlug = await resolveOrgSlug(organizationId, slug);

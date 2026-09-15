@@ -60,6 +60,21 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    if (invitedEmail) {
+      try {
+        const invitedUser = await prisma.user.findUnique({
+          where: { email: invitedEmail },
+          select: { id: true },
+        });
+        if (invitedUser) {
+          const { redis } = await import("@/lib/redis");
+          await redis.del(`notifications:user:${invitedUser.id}`);
+        }
+      } catch (err) {
+        console.warn("Failed to invalidate recipient notification cache:", err);
+      }
+    }
+
     const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}`;
     return NextResponse.json({ inviteUrl, expiresAt: invite.expiresAt });
   } catch (error) {

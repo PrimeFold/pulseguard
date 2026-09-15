@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/auth";
 import { redis } from "@/lib/redis";
 
-const NOTIFICATION_CACHE_TTL_SECONDS = 7 * 60 * 60; // 7 Hours
+const NOTIFICATION_CACHE_TTL_SECONDS = 30; // 30 seconds for live freshness
 
 export interface NotificationPayload {
   invites: Array<{
@@ -17,26 +17,32 @@ export interface NotificationPayload {
     type: "INCIDENT_APPROVAL";
     title: string;
     incidentId: string;
+    orgSlug?: string;
     createdAt: Date;
   }>;
   totalCount: number;
 }
 
-export async function getUserNotifications(user: { id: string; email: string }): Promise<NotificationPayload> {
+export async function getUserNotifications(
+  user: { id: string; email: string },
+  forceRefresh = false
+): Promise<NotificationPayload> {
   const cacheKey = `notifications:user:${user.id}`;
 
-  // 1. Try Redis Cache first (fail gracefully if Redis is unavailable)
-  try {
-    const cached = await redis.get(cacheKey);
-    if (cached) {
-      return JSON.parse(cached as string);
+  // 1. Try Redis Cache first unless forceRefresh is requested
+  if (!forceRefresh) {
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return JSON.parse(cached as string);
+      }
+    } catch (err) {
+      console.warn("Redis notification cache read failed, falling back to DB compute:", err);
     }
-  } catch (err) {
-    console.warn("Redis notification cache read failed, falling back to DB compute:", err);
   }
 
   try {
-    // 2. Cache Miss: Compute Pending Invites
+    // 2. Cache Miss / Force Refresh: Compute Pending Invites
     const pendingInvites = await prisma.organizationInvite.findMany({
       where: {
         invitedEmail: user.email,
@@ -71,6 +77,7 @@ export async function getUserNotifications(user: { id: string; email: string }):
             title: true,
             organizationId: true,
             createdAt: true,
+            organization: { select: { slug: true } },
           },
         })
       : [];
@@ -90,12 +97,13 @@ export async function getUserNotifications(user: { id: string; email: string }):
         type: "INCIDENT_APPROVAL",
         title: `Open Incident: ${inc.title}`,
         incidentId: inc.id,
+        orgSlug: inc.organization?.slug,
         createdAt: inc.createdAt,
       })),
       totalCount: pendingInvites.length + pendingHotfixes.length,
     };
 
-    // 6. Cache in Redis for 7 hours (fail gracefully if Redis is unavailable)
+    // 6. Cache in Redis with 30s TTL
     try {
       await redis.set(cacheKey, JSON.stringify(notifications), "EX", NOTIFICATION_CACHE_TTL_SECONDS);
     } catch (err) {
@@ -113,10 +121,29 @@ export async function getUserNotifications(user: { id: string; email: string }):
   }
 }
 
-export async function invalidateUserNotificationCache(userId: string) {
+export async function invalidateUserNotificationCache(userId: string): Promise<void> {
   try {
     await redis.del(`notifications:user:${userId}`);
   } catch (err) {
     console.warn("Redis cache invalidation failed:", err);
+  }
+}
+
+export async function invalidateOrgNotificationCache(organizationId: string): Promise<void> {
+  try {
+    const adminMembers = await prisma.organizationMember.findMany({
+      where: {
+        organizationId,
+        role: { in: ["ADMIN", "OWNER"] },
+      },
+      select: { userId: true },
+    });
+
+    if (adminMembers.length > 0) {
+      const keys = adminMembers.map((m) => `notifications:user:${m.userId}`);
+      await redis.del(...keys);
+    }
+  } catch (err) {
+    console.warn("Failed to invalidate org notification cache:", err);
   }
 }

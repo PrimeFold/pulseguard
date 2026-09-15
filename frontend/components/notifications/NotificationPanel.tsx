@@ -32,6 +32,7 @@ interface NotificationPayload {
     type: "INCIDENT_APPROVAL";
     title: string;
     incidentId: string;
+    orgSlug?: string;
     createdAt: string;
   }>;
   totalCount: number;
@@ -71,10 +72,11 @@ export function NotificationPanel({ align = "auto" }: NotificationPanelProps) {
     align === "auto" ? detectedAlign : align;
 
   // Fetch notifications on demand
-  const loadNotifications = async () => {
+  const loadNotifications = async (forceRefresh = false) => {
     try {
       setIsLoading(true);
-      const res = await fetch("/api/notifications");
+      const url = forceRefresh ? "/api/notifications?refresh=true" : "/api/notifications";
+      const res = await fetch(url, { cache: "no-store" });
       if (res.ok) {
         setData(await res.json());
       }
@@ -87,12 +89,12 @@ export function NotificationPanel({ align = "auto" }: NotificationPanelProps) {
 
   // Initial fetch on mount
   useEffect(() => {
-    loadNotifications();
+    loadNotifications(true);
 
     // Revalidate once when user returns to this browser tab
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        loadNotifications();
+        loadNotifications(true);
       }
     };
 
@@ -171,7 +173,7 @@ export function NotificationPanel({ align = "auto" }: NotificationPanelProps) {
 
   const togglePanel = () => {
     if (!isOpen) {
-      loadNotifications();
+      loadNotifications(true);
     }
     setIsOpen(!isOpen);
   };
@@ -195,7 +197,7 @@ export function NotificationPanel({ align = "auto" }: NotificationPanelProps) {
         body: JSON.stringify({ token }),
         headers: { "Content-Type": "application/json" },
       });
-      await loadNotifications();
+      await loadNotifications(true);
     } catch (e) {
       console.error("Invite action failed:", e);
     } finally {
@@ -261,7 +263,7 @@ export function NotificationPanel({ align = "auto" }: NotificationPanelProps) {
           <div className="flex items-center gap-1">
             <button
               type="button"
-              onClick={loadNotifications}
+              onClick={() => loadNotifications(true)}
               title="Refresh notifications"
               className="p-1 text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
             >
@@ -389,7 +391,7 @@ export function NotificationPanel({ align = "auto" }: NotificationPanelProps) {
               {filteredActions.map((item) => (
                 <Link
                   key={item.id}
-                  href={`/incidents/${item.incidentId}`}
+                  href={item.orgSlug ? `/${item.orgSlug}/incidents/${item.incidentId}` : `/incidents/${item.incidentId}`}
                   onClick={() => setIsOpen(false)}
                   className="p-3.5 hover:bg-zinc-900/50 transition-colors group block cursor-pointer"
                 >
