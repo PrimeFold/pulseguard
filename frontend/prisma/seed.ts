@@ -22,13 +22,13 @@ function loadEnvFile(envPath: string) {
   }
 }
 
-loadEnvFile(path.resolve(process.cwd(), "frontend/.env.local"));
-loadEnvFile(path.resolve(process.cwd(), "frontend/.env"));
 loadEnvFile(path.resolve(process.cwd(), ".env.local"));
 loadEnvFile(path.resolve(process.cwd(), ".env"));
+loadEnvFile(path.resolve(process.cwd(), "frontend/.env.local"));
+loadEnvFile(path.resolve(process.cwd(), "frontend/.env"));
 
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "../lib/generated/prisma/client";
+import { PrismaClient } from "../../backend/src/lib/generated/prisma/client";
 
 if (!process.env.DATABASE_URL) {
   console.error("❌ Error: DATABASE_URL environment variable is not defined.");

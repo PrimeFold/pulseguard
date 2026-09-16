@@ -52,54 +52,54 @@ export function UserProfileForm({
   };
 
   return (
-    <Card className="bg-zinc-950/60 border border-zinc-800 rounded-none shadow-none">
-      <CardHeader className="pb-4 px-6 pt-6">
-        <div className="flex items-center gap-2">
-          <User className="h-4 w-4 text-zinc-400" />
-          <CardTitle className="text-sm font-semibold font-mono uppercase tracking-wider text-white">
+    <Card className="bg-zinc-950/80 border border-zinc-800 rounded-none shadow-md">
+      <CardHeader className="pb-5 px-6 pt-6">
+        <div className="flex items-center gap-2.5">
+          <User className="h-5 w-5 text-zinc-300" />
+          <CardTitle className="text-base font-bold font-mono uppercase tracking-wider text-white">
             User Settings
           </CardTitle>
         </div>
-        <CardDescription className="text-xs text-zinc-500 font-sans">
+        <CardDescription className="text-xs sm:text-sm text-zinc-400 font-sans mt-1">
           Manage your personal console credentials and profile name.
         </CardDescription>
       </CardHeader>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <CardContent className="px-6 pb-4 space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <CardContent className="px-6 pb-4 space-y-5">
           <div className="space-y-2">
-            <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+            <label className="text-xs font-mono uppercase tracking-wider text-zinc-300 font-semibold">
               Email Address
             </label>
             <Input
               value={user.email}
               disabled
-              className="bg-zinc-900 border-zinc-800 text-zinc-500 cursor-not-allowed text-xs rounded-none h-8 font-sans"
+              className="bg-zinc-900/90 border-zinc-800 text-zinc-400 cursor-not-allowed text-xs sm:text-sm rounded-none h-11 font-sans"
             />
-            <p className="text-[10px] text-zinc-600 font-sans leading-relaxed">
+            <p className="text-xs text-zinc-500 font-sans leading-relaxed">
               Email changes are locked under tenant security rules.
             </p>
           </div>
 
           <div className="space-y-2">
-            <label className="text-[11px] font-mono uppercase tracking-wider text-zinc-400">
+            <label className="text-xs font-mono uppercase tracking-wider text-zinc-300 font-semibold">
               Display Name
             </label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter your name"
-              className="bg-zinc-900 border-zinc-800 text-zinc-100 text-xs rounded-none h-8 font-sans focus-visible:ring-1 focus-visible:ring-zinc-700"
+              className="bg-zinc-900 border-zinc-800 text-zinc-100 text-xs sm:text-sm rounded-none h-11 font-sans focus-visible:ring-1 focus-visible:ring-zinc-700"
               required
             />
           </div>
 
           {message && (
             <div
-              className={`p-2 border font-mono text-[10px] uppercase rounded-none ${
+              className={`p-3 border font-mono text-xs uppercase rounded-none ${
                 message.type === "success"
-                  ? "bg-emerald-950/20 border-emerald-900/40 text-emerald-400"
-                  : "bg-red-950/20 border-red-900/40 text-red-400"
+                  ? "bg-emerald-950/30 border-emerald-800/50 text-emerald-400"
+                  : "bg-red-950/30 border-red-800/50 text-red-400"
               }`}
             >
               {message.text}
@@ -107,13 +107,13 @@ export function UserProfileForm({
           )}
         </CardContent>
 
-        <CardFooter className="border-t border-zinc-900 px-6 py-4 bg-zinc-950/40 flex items-center justify-between">
+        <CardFooter className="border-t border-zinc-900 px-6 py-4 bg-zinc-950/60 flex items-center justify-between gap-3">
           <Button
             type="submit"
             disabled={loading || name === user.name}
-            className="bg-white hover:bg-zinc-200 text-black border border-transparent font-mono text-[10px] font-semibold tracking-wider rounded-none h-8 px-4 transition-all duration-300 active:scale-[0.98] cursor-pointer"
+            className="bg-white hover:bg-zinc-200 text-black border border-transparent font-mono text-xs font-bold tracking-wider rounded-none h-10 px-5 transition-all duration-300 active:scale-[0.98] cursor-pointer"
           >
-            {loading && <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />}
+            {loading && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
             SAVE CHANGES
           </Button>
 
@@ -123,7 +123,7 @@ export function UserProfileForm({
               await authClient.signOut();
               window.location.href = "/login";
             }}
-            className="bg-transparent hover:bg-red-950/30 text-zinc-400 hover:text-red-400 border border-zinc-800 hover:border-red-900/50 font-mono text-[10px] font-semibold tracking-wider rounded-none h-8 px-3 transition-all duration-300 active:scale-[0.98] cursor-pointer"
+            className="bg-transparent hover:bg-red-950/30 text-zinc-400 hover:text-red-400 border border-zinc-800 hover:border-red-900/50 font-mono text-xs font-bold tracking-wider rounded-none h-10 px-4 transition-all duration-300 active:scale-[0.98] cursor-pointer"
           >
             SIGN OUT
           </Button>

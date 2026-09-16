@@ -85,19 +85,19 @@ export function OrgSidebar({
           <Link
             href="/workspaces"
             onClick={onClose}
-            className="flex-1 flex items-center justify-between p-3 rounded-none bg-zinc-950 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900 transition-all active:scale-[0.98] group"
+            className="flex-1 flex items-center justify-between p-3.5 rounded-none bg-zinc-950 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/90 transition-all active:scale-[0.98] group"
           >
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-white truncate font-mono uppercase tracking-wider">
+            <div className="min-w-0 space-y-0.5">
+              <p className="text-sm font-bold text-white truncate font-mono uppercase tracking-wider">
                 {org.name}
               </p>
               <p className="text-xs font-mono text-zinc-400 uppercase tracking-wider truncate">
                 /{org.slug}
               </p>
             </div>
-            <ArrowLeftRight className="h-3.5 w-3.5 text-zinc-500 group-hover:text-white shrink-0 transition-colors" />
+            <ArrowLeftRight className="h-4 w-4 text-zinc-400 group-hover:text-white shrink-0 transition-colors" />
           </Link>
-          <div className="shrink-0 bg-zinc-950 border border-zinc-800 flex items-center justify-center">
+          <div className="shrink-0 bg-zinc-950 border border-zinc-800 flex items-center justify-center p-1">
             <NotificationPanel align="left" />
           </div>
         </div>

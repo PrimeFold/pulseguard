@@ -3,9 +3,14 @@
   "private": true,
   "workspaces": ["frontend", "backend"],
   "scripts": {
-    "postinstall": "npx prisma generate --schema=backend/src/prisma/schema.prisma"
+    "postinstall": "echo postinstall",
+    "seed": "bun run backend/src/prisma/seed.ts"
   },
   "devDependencies": {
     "@types/nodemailer": "^8.0.1"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0"
   }
 }
