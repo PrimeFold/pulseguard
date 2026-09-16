@@ -383,6 +383,65 @@ export function WarRoomChat({
                           );
                         }
 
+                        // Render Telemetry Log Results Card
+                        if (
+                          toolName === "query_telemetry_logs" &&
+                          isDone &&
+                          rawOutput
+                        ) {
+                          const logs: any[] = Array.isArray(rawOutput)
+                            ? rawOutput
+                            : Array.isArray(rawOutput?.data)
+                              ? rawOutput.data
+                              : [];
+
+                          return (
+                            <div key={index} className="mt-3 space-y-2 font-mono">
+                              <div className="text-xs text-zinc-400 uppercase tracking-wider flex items-center gap-2 font-semibold">
+                                <Terminal className="h-3.5 w-3.5 text-emerald-400" />
+                                TELEMETRY LOGS ({logs.length} FOUND)
+                              </div>
+                              {logs.length === 0 ? (
+                                <div className="text-xs text-zinc-500 bg-zinc-950 border border-zinc-900 p-2.5">
+                                  No matching telemetry error logs found for this filter.
+                                </div>
+                              ) : (
+                                <div className="space-y-2 max-h-60 overflow-y-auto">
+                                  {logs.slice(0, 5).map((log: any, lIdx: number) => (
+                                    <div
+                                      key={log.id || lIdx}
+                                      className="p-3 bg-zinc-950 border border-zinc-900 text-xs space-y-1 rounded-none"
+                                    >
+                                      <div className="flex items-center justify-between text-[10px]">
+                                        <span className="font-bold text-emerald-400">
+                                          {log.service || "telemetry-service"}
+                                        </span>
+                                        <span
+                                          className={`px-1.5 py-0.5 font-bold uppercase text-[9px] ${
+                                            log.level === "FATAL" || log.level === "ERROR"
+                                              ? "text-red-400 bg-red-950/60 border border-red-900/60"
+                                              : "text-amber-400 bg-amber-950/60 border border-amber-900/60"
+                                          }`}
+                                        >
+                                          {log.level || "ERROR"}
+                                        </span>
+                                      </div>
+                                      <p className="text-zinc-200 text-xs font-mono leading-relaxed select-all">
+                                        {log.message || JSON.stringify(log)}
+                                      </p>
+                                      {log.timestamp && (
+                                        <div className="text-[10px] text-zinc-500">
+                                          {new Date(log.timestamp).toLocaleString()}
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
+
                         // Status Badges for Executing/Done Tools
                         return (
                           <div

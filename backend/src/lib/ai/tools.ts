@@ -1,9 +1,9 @@
-import { getTelemetry } from "@/app/api/action/telemetry";
 import { tool } from "ai";
 import { z } from "zod";
 import { prisma } from "../auth";
 import { getInstallationOctokit, fetchFileFromRepo } from "../github";
-import { searchKnowledgeBase } from "@/app/api/action/agent";
+import { getEmbeddingVectorString } from "@/app/api/action/embedding";
+import { queryResult } from "@/app/types/searchResult";
 
 const telemetryLevels = ["INFO", "WARN", "ERROR", "FATAL"] as const;
 
@@ -22,7 +22,23 @@ export function createIncidentTools(organizationId: string) {
       }),
       execute: async ({ query }: { query: string }) => {
         try {
-          const results = await searchKnowledgeBase(query, organizationId);
+          if (!query || !query.trim()) return [];
+          const queryVectorString = await getEmbeddingVectorString(query, organizationId);
+          await prisma.$executeRawUnsafe(`SET hnsw.ef_search = 40;`);
+
+          const results = await prisma.$queryRaw<queryResult[]>`
+            SELECT 
+            chunk.id,
+            chunk.content,
+            1 - (chunk.embedding <=> ${queryVectorString}::vector) AS similarity
+            FROM "DocumentChunk" AS chunk
+            INNER JOIN "Document" AS document ON document.id = chunk."documentId"
+            WHERE document."organizationId" = ${organizationId}
+              AND 1 - (chunk.embedding <=> ${queryVectorString}::vector) > 0.60
+            ORDER BY chunk.embedding <=> ${queryVectorString}::vector ASC
+            LIMIT 3;
+          `;
+
           return (results || []).map((r) => ({
             id: String(r.id),
             content: r.content,
@@ -58,7 +74,7 @@ export function createIncidentTools(organizationId: string) {
         fromDate,
         toDate,
         searchQuery,
-        limit,
+        limit = 10,
       }: {
         service?: string;
         level?: (typeof telemetryLevels)[number];
@@ -68,25 +84,42 @@ export function createIncidentTools(organizationId: string) {
         limit?: number;
       }) => {
         try {
-          let result = await getTelemetry({
+          const where: any = {
             organizationId,
-            service,
-            level,
-            fromDate: fromDate ? new Date(fromDate) : undefined,
-            toDate: toDate ? new Date(toDate) : undefined,
-            searchQuery,
-            limit,
+            ...(service && { service }),
+            ...(level && { level }),
+            ...(fromDate || toDate
+              ? {
+                  timestamp: {
+                    ...(fromDate && { gte: new Date(fromDate) }),
+                    ...(toDate && { lte: new Date(toDate) }),
+                  },
+                }
+              : {}),
+            ...(searchQuery && {
+              OR: [
+                { message: { contains: searchQuery, mode: "insensitive" } },
+                { service: { contains: searchQuery, mode: "insensitive" } },
+              ],
+            }),
+          };
+
+          let logs = await prisma.telemetryLog.findMany({
+            where,
+            orderBy: { timestamp: "desc" },
+            take: limit,
           });
 
           // Fallback: If initial filter yielded no logs, query latest logs for the organization
-          if ((!result?.data || result.data.length === 0)) {
-            result = await getTelemetry({
-              organizationId,
-              limit,
+          if (!logs || logs.length === 0) {
+            logs = await prisma.telemetryLog.findMany({
+              where: { organizationId },
+              orderBy: { timestamp: "desc" },
+              take: limit,
             });
           }
 
-          return (result?.data || []).map((log) => ({
+          return (logs || []).map((log) => ({
             id: log.id,
             service: log.service,
             level: log.level,
@@ -162,12 +195,13 @@ export function createIncidentTools(organizationId: string) {
         "Propose a code fix and PR structure for human review before creating the GitHub PR.",
       inputSchema: z.object({
         filePath: z.string().describe("Target file path"),
-        originalSnippet: z.string().describe("The broken code lines"),
+        originalSnippet: z.string().optional().describe("The broken code lines"),
         updatedContent: z
           .string()
           .describe("The full modified file content or patch"),
         fixBranch: z
           .string()
+          .optional()
           .describe('Suggested branch name, e.g. "hotfix/db-pool-fix"'),
         commitMessage: z.string().describe("Commit message"),
         prTitle: z.string().describe("PR Title"),
@@ -178,7 +212,11 @@ export function createIncidentTools(organizationId: string) {
       execute: async (proposal: any) => {
         return {
           status: "requires_approval",
-          proposal,
+          proposal: {
+            ...proposal,
+            originalSnippet: proposal.originalSnippet || "",
+            fixBranch: proposal.fixBranch || "hotfix/incident-resolution",
+          },
         };
       },
     }),

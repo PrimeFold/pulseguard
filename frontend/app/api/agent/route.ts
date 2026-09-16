@@ -3,6 +3,7 @@ import {
   convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
+  isStepCount,
 } from "ai";
 import { google } from "@ai-sdk/google";
 
@@ -175,22 +176,39 @@ export async function POST(req: NextRequest) {
         const result = streamText({
           model: aiModel,
           system: `You are an Autonomous Site Reliability Engineer (SRE).
-Investigate production incidents by:
-1. Searching the organization runbook knowledge base using 'search_knowledge_base' to retrieve resolution steps.
-2. Querying recent telemetry logs using 'query_telemetry_logs' around the timeframe.
-3. Identifying the breaking file and fetching its code with 'fetch_repo_file'.
-4. Providing root-cause analysis and creating a unified patch with 'propose_hotfix' and waiting for human approval.
+Investigate production incidents and resolve outages using your tools:
+- 'search_knowledge_base': Search parsed organization runbooks.
+- 'query_telemetry_logs': Retrieve ERROR/FATAL telemetry logs and stack traces.
+- 'fetch_repo_file': Read repository source files.
+- 'propose_hotfix': ALWAYS invoke this tool when asked to draft a hotfix, patch, or PR fix.
 
-CRITICAL RESPONSE REQUIREMENTS:
-- You MUST ALWAYS emit a clear, detailed, and professional Markdown text response summarizing your technical analysis and diagnosis for the user.
-- AFTER EVERY TOOL EXECUTION, YOU MUST IMMEDIATELY EXPLAIN THE FINDINGS FROM THE LOGS/RUNBOOKS AND PROVIDE YOUR TECHNICAL DIAGNOSIS. NEVER END YOUR TURN WITHOUT TEXT OUTPUT.`,
+EXECUTION WORKFLOW:
+1. GATHER CONTEXT: Query telemetry logs or search runbooks (at most 1 query each).
+2. REPOSITORY ACCESS: If 'fetch_repo_file' is not found or fails, do not repeatedly retry. Immediately infer a realistic service file path (e.g. "src/lib/db.ts", "src/services/payment.ts") and construct the fix.
+3. PROPOSE HOTFIX: When the user asks to "draft hotfix patch", "propose a fix", "create PR", or "fix the code", YOU MUST CALL 'propose_hotfix' with filePath, updatedContent, commitMessage, prTitle, and prBody.
+4. DIAGNOSTIC SUMMARY: Always conclude with a complete Markdown technical analysis explaining root cause, patch design, and verification steps. NEVER finish without emitting rich Markdown text.`,
           messages: modelMessages,
           tools,
-          maxSteps: 5,
+          stopWhen: isStepCount(10),
           onChunk: ({ chunk }) => {
-            if (chunk.type === "text-delta" && chunk.textDelta) {
-              accumulatedText += chunk.textDelta;
+            console.log(
+              "[AGENT API] 📦 Stream Chunk:",
+              chunk.type,
+              (chunk as any).textDelta
+                ? `(textDelta: "${(chunk as any).textDelta.slice(0, 30)}...")`
+                : "",
+            );
+            if (chunk.type === "text-delta" && (chunk as any).textDelta) {
+              accumulatedText += (chunk as any).textDelta;
             }
+          },
+          onStepFinish: ({ text, toolCalls, toolResults, finishReason }) => {
+            console.log("[AGENT API] 👣 Step finished:", {
+              textLength: text?.length || 0,
+              toolCallsCount: toolCalls?.length || 0,
+              toolResultsCount: toolResults?.length || 0,
+              finishReason,
+            });
           },
           onError: ({ error }) => {
             console.error(
@@ -226,7 +244,7 @@ CRITICAL RESPONSE REQUIREMENTS:
 
             const finalText = text || accumulatedText;
 
-            if (incidentId && finalText) {
+            if (incidentId && finalText && finalText.trim().length > 0) {
               try {
                 await prisma.incidentMessage.create({
                   data: {

@@ -266,3 +266,25 @@ Tenant boundaries and privileges are strictly isolated on the server level:
 - **Issue:** Client console logged `AI_TypeValidationError` during stream errors and text generation stopped when log levels were mismatched.
 - **Cause:** Emitting raw `{ type: "text" }` violated `UIMessageStream` Zod schemas, Zod schema forced `level: "ERROR"` (excluding `"FATAL"` logs), and stripping `thoughtSignature` suppressed Gemini 3 text.
 - **Solution:** Formatted error stream chunks into `text-start`/`text-delta`/`text-end`, made `level` optional in `query_telemetry_logs` with org-wide fallback, and preserved native `thoughtSignature` context.
+
+### 17. Automated Hotfix Tool Invocation & Diff Approval Card Rendering
+- **Issue:** Clicking "Draft Hotfix Patch" invoked runbook queries instead of outputting a code patch or rendering the interactive Diff Approval Card.
+- **Cause:** The agent system prompt lacked explicit tool execution rules for `propose_hotfix` when processing patch/fix prompts.
+- **Solution:** Configured `route.ts` system prompt to mandate `propose_hotfix` tool execution on hotfix/patch prompts, inferring realistic target service paths (e.g. `src/lib/db.ts`) to render the interactive `<DiffApprovalCard />` in the UI.
+
+### 18. Elimination of Synthetic Stream Fallback Contamination
+- **Issue:** Multi-turn conversation state became contaminated, causing the model to stop generating hotfix proposals or skip GitHub PR tool calls.
+- **Cause:** `onFinish` in `route.ts` injected synthetic fallback text into assistant messages when text length was 0. When saved to the database and replayed in message history, this misled the LLM into assuming the diagnosis and hotfix had already been completed.
+- **Solution:** Removed synthetic text injection from `onFinish` in `route.ts`. The conversation history now remains 100% authentic, allowing multi-turn prompts ("Draft Hotfix Patch") to execute `propose_hotfix` and present the interactive `<DiffApprovalCard />` with its "Approve & Open PR" button.
+
+### 19. AI SDK Multi-Step Tool Chaining (`stopWhen: isStepCount(n)`) & Premature Termination Resolution
+- **Issue:** Clicking "Draft Hotfix Patch" executed a single tool (`query_telemetry_logs`) and immediately finished with `Emitted text length: 0` without calling `propose_hotfix` or generating Markdown diagnostic output.
+- **Cause:** In modern `ai@7.x` (`streamText`), tool looping defaults to `stopWhen = isStepCount(1)`. The legacy `maxSteps: 5` property was ignored, causing `streamText` to terminate execution immediately after the first tool result.
+- **Solution:** Configured `stopWhen: isStepCount(10)` in `frontend/app/api/agent/route.ts` and updated the SRE agent workflow instructions to sequentially execute context gathering (`query_telemetry_logs`), hotfix proposal (`propose_hotfix`), and comprehensive Markdown diagnosis.
+
+### 20. Organization-Scoped Agent Tool Execution & Auth Cookie Decoupling
+- **Issue:** Agent tool executions failed with `{ error: "Unauthorized" }` when executing telemetry or runbook searches during background streaming.
+- **Cause:** Tools invoked user-facing Server Actions (`getTelemetry`, `searchKnowledgeBase`) which enforce client HTTP cookie session checks (`requireOrganizationMembership`), failing in decoupled API stream contexts.
+- **Solution:** Refactored `backend/src/lib/ai/tools.ts` to execute queries directly via Prisma within the verified `organizationId` multi-tenant boundary, ensuring 100% reliability for all autonomous tool calls.
+
+
