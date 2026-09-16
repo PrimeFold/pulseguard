@@ -219,8 +219,10 @@ export function WarRoomChat({
                     }`}
                   >
                     <div className="space-y-2.5">
-                      {(!m.parts || m.parts.length === 0) && (m as any).content && (
-                        m.role === "user" ? (
+                      {/* 1. Render message text fallback if m.content exists and no text part is present */}
+                      {(!m.parts || m.parts.every((p) => p.type !== "text")) &&
+                        (m as any).content &&
+                        (m.role === "user" ? (
                           <div className="whitespace-pre-wrap leading-relaxed text-xs sm:text-sm font-mono text-zinc-100">
                             {(m as any).content}
                           </div>
@@ -229,10 +231,11 @@ export function WarRoomChat({
                             content={(m as any).content}
                             className="text-xs sm:text-sm"
                           />
-                        )
-                      )}
+                        ))}
+
+                      {/* 2. Process message parts */}
                       {m.parts?.map((part, index) => {
-                        // 1. Regular text
+                        // Regular text part
                         if (part.type === "text") {
                           return m.role === "user" ? (
                             <div
@@ -250,20 +253,41 @@ export function WarRoomChat({
                           );
                         }
 
-                        // 2. Propose Hotfix -> Render Diff Approval Card
-                        if (part.type === "tool-propose_hotfix") {
-                          if (part.state === "output-available") {
-                            const output = part.output as any;
-                            if (
-                              !output ||
-                              typeof output !== "object" ||
-                              !output.proposal
-                            ) {
-                              return null;
-                            }
+                        // Extract Tool Invocation details across Vercel AI SDK standard & legacy shapes
+                        const isToolInvocation =
+                          part.type === "tool-invocation" ||
+                          part.type.startsWith("tool-");
 
-                            const proposal = output.proposal;
+                        if (!isToolInvocation) return null;
 
+                        const toolName =
+                          part.type === "tool-invocation"
+                            ? (part as any).toolInvocation?.toolName
+                            : part.type.replace("tool-", "");
+
+                        const isDone =
+                          part.type === "tool-invocation"
+                            ? (part as any).toolInvocation?.state === "result"
+                            : (part as any).state === "output-available";
+
+                        const rawOutput =
+                          part.type === "tool-invocation"
+                            ? (part as any).toolInvocation?.result
+                            : (part as any).output;
+
+                        const cleanName = (toolName || "tool execution").replace(
+                          /_/g,
+                          " ",
+                        );
+
+                        // Propose Hotfix -> Render Diff Approval Card
+                        if (toolName === "propose_hotfix" && isDone && rawOutput) {
+                          const proposal = rawOutput.proposal || rawOutput;
+                          if (
+                            proposal &&
+                            typeof proposal === "object" &&
+                            proposal.updatedContent
+                          ) {
                             return (
                               <DiffApprovalCard
                                 key={index}
@@ -277,104 +301,90 @@ export function WarRoomChat({
                           }
                         }
 
-                        // 3. Render Semantic Knowledge Base / Runbook Results
-                        if (part.type === "tool-search_knowledge_base") {
-                          if (part.state === "output-available") {
-                            const rawOutput: any = part.output;
-                            const hasError =
-                              rawOutput &&
-                              typeof rawOutput === "object" &&
-                              "error" in rawOutput;
-                            const results: any[] = Array.isArray(rawOutput)
-                              ? rawOutput
-                              : Array.isArray(rawOutput?.results)
-                                ? rawOutput.results
-                                : [];
-
-                            return (
-                              <div
-                                key={index}
-                                className="mt-3 space-y-2 font-mono"
-                              >
-                                <div className="text-xs text-zinc-400 uppercase tracking-wider flex items-center gap-2 font-semibold">
-                                  <BookOpen className="h-3.5 w-3.5 text-emerald-400" />{" "}
-                                  RUNBOOK MATCHES
-                                </div>
-                                {hasError ? (
-                                  <div className="text-xs text-zinc-400 bg-zinc-950 border border-zinc-900 p-2.5">
-                                    No correlated runbook indexed ({rawOutput.error}
-                                    )
-                                  </div>
-                                ) : results.length === 0 ? (
-                                  <div className="text-xs text-zinc-500">
-                                    No correlated runbooks discovered.
-                                  </div>
-                                ) : (
-                                  <div className="space-y-2">
-                                    {results.map((res: any, rIdx: number) => (
-                                      <div
-                                        key={res.id || rIdx}
-                                        className="p-3 bg-zinc-950 border border-zinc-900 text-xs space-y-1.5 rounded-none"
-                                      >
-                                        <div className="flex items-center justify-between text-[10px] sm:text-xs text-zinc-500">
-                                          <span className="text-zinc-400 font-medium">
-                                            REF:{" "}
-                                            {res.id
-                                              ? String(res.id).slice(0, 8)
-                                              : `DOC-${rIdx + 1}`}
-                                          </span>
-                                          {typeof res.similarity === "number" && (
-                                            <span className="text-emerald-400 font-bold">
-                                              {(res.similarity * 100).toFixed(0)}%
-                                              MATCH
-                                            </span>
-                                          )}
-                                        </div>
-                                        <p className="text-zinc-200 font-mono text-xs leading-relaxed select-all">
-                                          {res.content || JSON.stringify(res)}
-                                        </p>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          }
-                        }
-
-                        // 4. Status Badges for Running Tools
+                        // Render Semantic Knowledge Base / Runbook Results
                         if (
-                          part.type === "tool-query_telemetry_logs" ||
-                          part.type === "tool-fetch_repo_file" ||
-                          part.type === "tool-propose_hotfix" ||
-                          part.type === "tool-search_knowledge_base"
+                          toolName === "search_knowledge_base" &&
+                          isDone &&
+                          rawOutput
                         ) {
-                          const isDone = part.state === "output-available";
-                          const cleanName = part.type
-                            .replace("tool-", "")
-                            .replace(/_/g, " ");
+                          const hasError =
+                            rawOutput &&
+                            typeof rawOutput === "object" &&
+                            "error" in rawOutput;
+                          const results: any[] = Array.isArray(rawOutput)
+                            ? rawOutput
+                            : Array.isArray(rawOutput?.results)
+                              ? rawOutput.results
+                              : [];
 
                           return (
                             <div
                               key={index}
-                              className="mt-2 flex items-center gap-2 px-2.5 py-1.5 rounded-none bg-zinc-950 border border-zinc-900 text-zinc-300 font-mono text-xs"
+                              className="mt-3 space-y-2 font-mono"
                             >
-                              <Sparkles className="h-3.5 w-3.5 text-zinc-400" />
-                              <span className="uppercase">{cleanName}</span>
-                              {!isDone ? (
-                                <span className="text-amber-400 font-bold animate-pulse">
-                                  (EXECUTING...)
-                                </span>
+                              <div className="text-xs text-zinc-400 uppercase tracking-wider flex items-center gap-2 font-semibold">
+                                <BookOpen className="h-3.5 w-3.5 text-emerald-400" />{" "}
+                                RUNBOOK MATCHES
+                              </div>
+                              {hasError ? (
+                                <div className="text-xs text-zinc-400 bg-zinc-950 border border-zinc-900 p-2.5">
+                                  No correlated runbook indexed ({rawOutput.error})
+                                </div>
+                              ) : results.length === 0 ? (
+                                <div className="text-xs text-zinc-500">
+                                  No correlated runbooks discovered.
+                                </div>
                               ) : (
-                                <span className="text-emerald-400 font-bold">
-                                  ✓ DONE
-                                </span>
+                                <div className="space-y-2">
+                                  {results.map((res: any, rIdx: number) => (
+                                    <div
+                                      key={res.id || rIdx}
+                                      className="p-3 bg-zinc-950 border border-zinc-900 text-xs space-y-1.5 rounded-none"
+                                    >
+                                      <div className="flex items-center justify-between text-[10px] sm:text-xs text-zinc-500">
+                                        <span className="text-zinc-400 font-medium">
+                                          REF:{" "}
+                                          {res.id
+                                            ? String(res.id).slice(0, 8)
+                                            : `DOC-${rIdx + 1}`}
+                                        </span>
+                                        {typeof res.similarity === "number" && (
+                                          <span className="text-emerald-400 font-bold">
+                                            {(res.similarity * 100).toFixed(0)}%
+                                            MATCH
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p className="text-zinc-200 font-mono text-xs leading-relaxed select-all">
+                                        {res.content || JSON.stringify(res)}
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
                               )}
                             </div>
                           );
                         }
 
-                        return null;
+                        // Status Badges for Executing/Done Tools
+                        return (
+                          <div
+                            key={index}
+                            className="mt-2 flex items-center gap-2 px-2.5 py-1.5 rounded-none bg-zinc-950 border border-zinc-900 text-zinc-300 font-mono text-xs"
+                          >
+                            <Sparkles className="h-3.5 w-3.5 text-zinc-400" />
+                            <span className="uppercase">{cleanName}</span>
+                            {!isDone ? (
+                              <span className="text-amber-400 font-bold animate-pulse">
+                                (EXECUTING...)
+                              </span>
+                            ) : (
+                              <span className="text-emerald-400 font-bold">
+                                ✓ DONE
+                              </span>
+                            )}
+                          </div>
+                        );
                       })}
                     </div>
                   </div>

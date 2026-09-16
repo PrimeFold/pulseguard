@@ -273,6 +273,18 @@ Tenant boundaries and privileges are strictly isolated on the server level:
   2. Enhanced `GithubIntegrationCard.tsx` to display human-readable inline error feedback directly in the UI without triggering React error boundaries.
   3. Added `formatPrivateKey()` in `backend/src/lib/github.ts` to automatically normalize raw Base64 strings, chunk 64-character lines, wrap valid RSA PEM headers, and unescape literal newlines.
 
+### 15. SRE Agent Data Stream Protocol & Empty Tool Output Handling
+
+- **Issue:** The SRE AI Agent in the War Room executed tools (displaying "✓ DONE" status badges) but generated no text response when tool results were empty (e.g. 0 error logs or no matching runbooks found).
+- **Cause:** 
+  1. `frontend/app/api/agent/route.ts` returned `createUIMessageStreamResponse({ stream: toUIMessageStream(...) })`, whereas `@ai-sdk/react`'s `useChat` hook expects standard Vercel AI SDK Data Stream responses (`result.toDataStreamResponse()`).
+  2. `WarRoomChat.tsx` checked `(!m.parts || m.parts.length === 0)` before rendering `m.content`. When `m.parts` contained tool invocation objects without a text part, text in `m.content` was suppressed.
+  3. The system prompt did not explicitly instruct the LLM to emit a Markdown text summary when tool execution returned empty results.
+- **Solution:** 
+  1. Updated `frontend/app/api/agent/route.ts` to return `result.toDataStreamResponse()` with `maxSteps: 5` for multi-step tool calls.
+  2. Normalized tool invocation parsing in `WarRoomChat.tsx` to handle standard `part.type === "tool-invocation"` (`part.toolInvocation`) and updated content fallback logic to `(!m.parts || m.parts.every((p) => p.type !== "text")) && (m as any).content`.
+  3. Added explicit system prompt instructions forcing the model to ALWAYS generate a Markdown text summary explaining what was checked, explicitly stating when no relevant logs/runbooks were found.
+
 
 
 

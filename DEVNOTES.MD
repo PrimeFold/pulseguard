@@ -264,16 +264,23 @@ export function createIncidentTools(organizationId: string) {
 ```
 
 ### Streaming API Route (`app/api/agent/route.ts`)
-Uses `streamText` and `toUIMessageStream` to stream markdown text and tool execution status simultaneously to the client:
+Uses `streamText` and `toDataStreamResponse` to stream markdown text and tool execution status simultaneously to the client:
 ```typescript
 const result = streamText({
-  model: google("gemini-3.5-flash"),
-  messages: [{ role: "system", content: SRE_SYSTEM_PROMPT }, ...modelMessages],
+  model: aiModel,
+  system: SRE_SYSTEM_PROMPT,
+  messages: modelMessages,
   tools: createIncidentTools(org.id),
-  stopWhen: isStepCount(5), // Prevents infinite tool-calling loops
+  maxSteps: 5, // Enables up to 5 multi-step tool execution loops
 });
-return createUIMessageStreamResponse({ ... });
+return result.toDataStreamResponse();
 ```
+
+## ⚠️ Where Things Can Go Wrong & Errors Faced
+| Failure Mode | Root Cause | Fix / Defense |
+| :--- | :--- | :--- |
+| **Silent Tool Execution / Missing Text** | `@ai-sdk/react` expects standard Data Stream protocol (`toDataStreamResponse()`). Returning custom UI stream responses or lacking system prompt instructions causes silent turns when tool output is empty. | Return `result.toDataStreamResponse()`, normalize `tool-invocation` parts in `WarRoomChat.tsx`, and explicitly instruct the model in system prompt to emit text even when 0 matches are found. |
+| **Tool Execution Infinite Loops** | Model repeatedly calls tools without reaching a terminal text turn. | Set `maxSteps: 5` in `streamText` options to constrain multi-step loops. |
 
 ---
 

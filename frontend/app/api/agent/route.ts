@@ -1,9 +1,6 @@
 import {
   streamText,
   convertToModelMessages,
-  isStepCount,
-  toUIMessageStream,
-  createUIMessageStreamResponse,
 } from "ai";
 import { google } from "@ai-sdk/google";
 
@@ -97,58 +94,48 @@ Investigate production incidents by:
 1. Searching the organization runbook knowledge base using 'search_knowledge_base' to retrieve resolution steps.
 2. Querying recent ERROR/FATAL telemetry logs using 'query_telemetry_logs' around the timeframe.
 3. Identifying the breaking file and fetching its code with 'fetch_repo_file'.
-4. Providing root-cause analysis and creating a unified patch with 'propose_hotfix' and waiting for human approval.`,
+4. Providing root-cause analysis and creating a unified patch with 'propose_hotfix' and waiting for human approval.
+
+CRITICAL RESPONSE REQUIREMENTS:
+- You MUST ALWAYS emit a clear, professional Markdown text response summarizing your technical analysis for the user.
+- EVEN IF 'search_knowledge_base', 'query_telemetry_logs', or 'fetch_repo_file' return empty results (0 matches, no logs, or no breaking files found), ALWAYS explain what was checked, explicitly state that no relevant logs or runbooks were found, and provide a helpful diagnosis or next steps. Never end your turn without text output.`,
       messages: modelMessages,
       tools: createIncidentTools(org.id),
-      stopWhen: isStepCount(5),
+      maxSteps: 5,
+      onFinish: async ({ text }) => {
+        if (incidentId && text) {
+          try {
+            await prisma.incidentMessage.create({
+              data: {
+                incidentId,
+                role: "ASSISTANT",
+                messages: text,
+              },
+            });
+          } catch (err) {
+            console.warn("Failed to persist incident message:", err);
+          }
+        }
+
+        if (incidentId) {
+          try {
+            await prisma.agentExecution.create({
+              data: {
+                organizationId: org.id,
+                incidentId: incidentId,
+                model: org.aiModel || "gemini-1.5-flash",
+                totalTokens: 0,
+                fingerprint: incident?.fingerprint || "manual-query",
+              },
+            });
+          } catch (err) {
+            console.warn("Failed to log agent execution:", err);
+          }
+        }
+      },
     });
 
-    return createUIMessageStreamResponse({
-      stream: toUIMessageStream({
-        stream: result.stream,
-        originalMessages: messages || [],
-        onFinish: async ({ messages: allMessages }) => {
-          const lastAssitantMessage = allMessages
-            .filter((m) => m.role === "assistant")
-            .pop();
-          const textContent =
-            lastAssitantMessage?.parts
-              .filter((part) => part.type === "text")
-              .map((part) => part.text)
-              .join("") || "";
-
-          if (incidentId && lastAssitantMessage) {
-            try {
-              await prisma.incidentMessage.create({
-                data: {
-                  incidentId,
-                  role: "ASSISTANT",
-                  messages: textContent,
-                },
-              });
-            } catch (err) {
-              console.warn("Failed to persist incident message:", err);
-            }
-          }
-
-          if (incidentId) {
-            try {
-              await prisma.agentExecution.create({
-                data: {
-                  organizationId: org.id,
-                  incidentId: incidentId,
-                  model: org.aiModel || "gemini-1.5-flash",
-                  totalTokens: 0,
-                  fingerprint: incident?.fingerprint || "manual-query",
-                },
-              });
-            } catch (err) {
-              console.warn("Failed to log agent execution:", err);
-            }
-          }
-        },
-      }),
-    });
+    return result.toDataStreamResponse();
   } catch (error: any) {
     console.error("POST /api/agent error:", error);
     return new Response(
