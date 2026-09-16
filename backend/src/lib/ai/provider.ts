@@ -59,26 +59,32 @@ export async function getOrgLanguageModel(organizationId: string) {
       },
     });
 
-    if (!org) {
+    const decryptedKey = org?.aiApiKeyEncrypted
+      ? decryptApiKey(org.aiApiKeyEncrypted)
+      : null;
+    const provider = org?.aiProvider?.toLowerCase() || "google";
+    const modelName = org?.aiModel || DEFAULT_TEXT_MODEL;
+
+    const apiKey =
+      decryptedKey ||
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+      process.env.GEMINI_API_KEY ||
+      process.env.GOOGLE_API_KEY;
+
+    if (provider === "google" || !provider) {
+      if (apiKey) {
+        const customGoogle = createGoogleGenerativeAI({ apiKey });
+        return customGoogle(modelName);
+      }
       return google(DEFAULT_TEXT_MODEL);
     }
 
-    const decryptedKey = org.aiApiKeyEncrypted
-      ? decryptApiKey(org.aiApiKeyEncrypted)
-      : null;
-    const provider = org.aiProvider?.toLowerCase() || "google";
-    const modelName = org.aiModel || DEFAULT_TEXT_MODEL;
-
-    if (provider === "google") {
-      if (decryptedKey) {
-        const customGoogle = createGoogleGenerativeAI({ apiKey: decryptedKey });
-        return customGoogle(modelName);
-      }
-      return google(modelName);
+    if (apiKey) {
+      const customGoogle = createGoogleGenerativeAI({ apiKey });
+      return customGoogle(modelName);
     }
 
-    // Fallback if custom provider client isn't installed yet or default
-    return google(modelName);
+    return google(DEFAULT_TEXT_MODEL);
   } catch {
     return google(DEFAULT_TEXT_MODEL);
   }

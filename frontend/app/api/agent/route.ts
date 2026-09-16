@@ -71,20 +71,44 @@ export async function POST(req: NextRequest) {
     // Dynamic model resolution for organization
     const aiModel = await getOrgLanguageModel(org.id);
 
-    // Convert messages safely
+    // Convert messages safely and filter out empty items
     let modelMessages: any[] = [];
     if (Array.isArray(messages) && messages.length > 0) {
       try {
         modelMessages = await convertToModelMessages(messages);
-      } catch {
-        modelMessages = messages.map((m: any) => ({
-          role: m.role || "user",
-          content:
-            typeof m.content === "string"
-              ? m.content
-              : m.parts?.map((p: any) => p.text || "").join("") || "",
-        }));
+      } catch (err) {
+        console.warn("convertToModelMessages failed, using fallback:", err);
       }
+
+      if (!Array.isArray(modelMessages) || modelMessages.length === 0) {
+        modelMessages = messages
+          .map((m: any) => {
+            let text = "";
+            if (typeof m.content === "string" && m.content.trim()) {
+              text = m.content.trim();
+            } else if (Array.isArray(m.parts)) {
+              text = m.parts
+                .filter((p: any) => p.type === "text" && p.text)
+                .map((p: any) => p.text)
+                .join("\n")
+                .trim();
+            }
+            return {
+              role: m.role === "assistant" ? "assistant" : "user",
+              content: text,
+            };
+          })
+          .filter((m: any) => m.content && m.content.trim().length > 0);
+      }
+    }
+
+    if (modelMessages.length === 0) {
+      modelMessages = [
+        {
+          role: "user",
+          content: "Investigate this incident and check available telemetry logs.",
+        },
+      ];
     }
 
     const result = streamText({
@@ -139,7 +163,10 @@ CRITICAL RESPONSE REQUIREMENTS:
   } catch (error: any) {
     console.error("POST /api/agent error:", error);
     return new Response(
-      JSON.stringify({ error: error.message || "Internal server error" }),
+      JSON.stringify({
+        error: error.message || "Internal server error",
+        details: String(error),
+      }),
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
