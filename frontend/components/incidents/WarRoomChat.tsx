@@ -385,6 +385,7 @@ export function WarRoomChat({
                     </div>
                   )}
                 </div>
+              ))}
               {isBusy && (
                 <div className="flex gap-3 justify-start animate-in fade-in-0 duration-200">
                   <div className="h-6 w-6 rounded-none bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0 mt-0.5">
