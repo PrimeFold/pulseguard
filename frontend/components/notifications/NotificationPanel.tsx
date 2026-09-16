@@ -205,6 +205,31 @@ export function NotificationPanel({ align = "auto" }: NotificationPanelProps) {
     }
   };
 
+  // Handler for Dismissing a Notification (Optimistic + Backend)
+  const handleDismiss = async (id: string, type: "INVITE" | "INCIDENT_APPROVAL") => {
+    // Optimistic UI Removal
+    setData((prev) => {
+      if (!prev) return null;
+      const nextInvites = type === "INVITE" ? prev.invites.filter((item) => item.id !== id) : prev.invites;
+      const nextActions = type === "INCIDENT_APPROVAL" ? prev.actionItems.filter((item) => item.id !== id) : prev.actionItems;
+      return {
+        invites: nextInvites,
+        actionItems: nextActions,
+        totalCount: nextInvites.length + nextActions.length,
+      };
+    });
+
+    try {
+      await fetch("/api/notifications/dismiss", {
+        method: "POST",
+        body: JSON.stringify({ id, type }),
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (err) {
+      console.error("Failed to dismiss notification:", err);
+    }
+  };
+
   const invites = data?.invites || [];
   const actionItems = data?.actionItems || [];
   const totalCount = data?.totalCount || 0;
@@ -341,7 +366,7 @@ export function NotificationPanel({ align = "auto" }: NotificationPanelProps) {
               {filteredInvites.map((inv) => (
                 <div
                   key={inv.id}
-                  className="p-3.5 hover:bg-zinc-900/40 transition-colors group"
+                  className="p-3.5 hover:bg-zinc-900/40 transition-colors group relative"
                 >
                   <div className="flex items-start gap-3">
                     <div className="mt-0.5 h-6 w-6 rounded-none bg-purple-950/40 border border-purple-800/40 flex items-center justify-center text-purple-400 shrink-0">
@@ -350,7 +375,7 @@ export function NotificationPanel({ align = "auto" }: NotificationPanelProps) {
 
                     <div className="flex-1 min-w-0 space-y-2">
                       <div>
-                        <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center justify-between gap-2 pr-5">
                           <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-purple-400 bg-purple-950/50 px-1 py-0.5 border border-purple-800/40">
                             ROLE: {inv.role}
                           </span>
@@ -383,25 +408,37 @@ export function NotificationPanel({ align = "auto" }: NotificationPanelProps) {
                         </button>
                       </div>
                     </div>
+
+                    {/* Top Right Remove X Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleDismiss(inv.id, "INVITE")}
+                      title="Remove notification"
+                      className="absolute top-3 right-3 text-zinc-600 hover:text-red-400 hover:bg-zinc-900 p-1 rounded-none transition-colors cursor-pointer"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 </div>
               ))}
 
               {/* Hotfix Approvals */}
               {filteredActions.map((item) => (
-                <Link
+                <div
                   key={item.id}
-                  href={item.orgSlug ? `/${item.orgSlug}/incidents/${item.incidentId}` : `/incidents/${item.incidentId}`}
-                  onClick={() => setIsOpen(false)}
-                  className="p-3.5 hover:bg-zinc-900/50 transition-colors group block cursor-pointer"
+                  className="p-3.5 hover:bg-zinc-900/50 transition-colors group relative"
                 >
-                  <div className="flex items-start gap-3">
+                  <Link
+                    href={item.orgSlug ? `/${item.orgSlug}/incidents/${item.incidentId}` : `/incidents/${item.incidentId}`}
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-start gap-3 cursor-pointer"
+                  >
                     <div className="mt-0.5 h-6 w-6 rounded-none bg-amber-950/40 border border-amber-800/50 flex items-center justify-center text-amber-400 shrink-0">
                       <Flame className="h-3.5 w-3.5 animate-pulse" />
                     </div>
 
                     <div className="flex-1 min-w-0 space-y-1">
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center justify-between gap-2 pr-5">
                         <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-amber-400 bg-amber-950/50 px-1 py-0.5 border border-amber-800/40">
                           HOTFIX APPROVAL
                         </span>
@@ -421,8 +458,22 @@ export function NotificationPanel({ align = "auto" }: NotificationPanelProps) {
                         </span>
                       </div>
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+
+                  {/* Top Right Remove X Button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDismiss(item.id, "INCIDENT_APPROVAL");
+                    }}
+                    title="Remove notification"
+                    className="absolute top-3 right-3 text-zinc-600 hover:text-red-400 hover:bg-zinc-900 p-1 rounded-none transition-colors cursor-pointer z-10"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               ))}
             </div>
           )}

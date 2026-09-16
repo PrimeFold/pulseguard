@@ -28,6 +28,7 @@ export async function getUserNotifications(
   forceRefresh = false
 ): Promise<NotificationPayload> {
   const cacheKey = `notifications:user:${user.id}`;
+  const dismissedKey = `notifications:dismissed:${user.id}`;
 
   // 1. Try Redis Cache first unless forceRefresh is requested
   if (!forceRefresh) {
@@ -42,8 +43,17 @@ export async function getUserNotifications(
   }
 
   try {
+    // Fetch dismissed notification IDs for this user
+    let dismissedIds: string[] = [];
+    try {
+      dismissedIds = await redis.smembers(dismissedKey);
+    } catch (err) {
+      console.warn("Failed to fetch dismissed notifications from Redis:", err);
+    }
+    const dismissedSet = new Set(dismissedIds);
+
     // 2. Cache Miss / Force Refresh: Compute Pending Invites
-    const pendingInvites = await prisma.organizationInvite.findMany({
+    const rawInvites = await prisma.organizationInvite.findMany({
       where: {
         invitedEmail: user.email,
         status: "PENDING",
@@ -53,6 +63,8 @@ export async function getUserNotifications(
         organization: { select: { id: true, name: true, slug: true } },
       },
     });
+
+    const pendingInvites = rawInvites.filter((inv) => !dismissedSet.has(inv.id));
 
     // 3. Find Orgs where user is ADMIN or OWNER
     const adminMemberships = await prisma.organizationMember.findMany({
@@ -66,7 +78,7 @@ export async function getUserNotifications(
     const adminOrgIds = adminMemberships.map((m) => m.organizationId);
 
     // 4. Compute Pending Incidents awaiting hotfix approval
-    const pendingHotfixes = adminOrgIds.length > 0
+    const rawHotfixes = adminOrgIds.length > 0
       ? await prisma.incident.findMany({
           where: {
             organizationId: { in: adminOrgIds },
@@ -81,6 +93,8 @@ export async function getUserNotifications(
           },
         })
       : [];
+
+    const pendingHotfixes = rawHotfixes.filter((inc) => !dismissedSet.has(inc.id));
 
     // 5. Structure into a clean unified notification payload
     const notifications: NotificationPayload = {
@@ -118,6 +132,36 @@ export async function getUserNotifications(
       actionItems: [],
       totalCount: 0,
     };
+  }
+}
+
+export async function dismissNotification(
+  userId: string,
+  notificationId: string,
+  type: "INVITE" | "INCIDENT_APPROVAL"
+): Promise<void> {
+  const dismissedKey = `notifications:dismissed:${userId}`;
+
+  try {
+    // 1. Store dismissed notification ID in Redis set
+    await redis.sadd(dismissedKey, notificationId);
+
+    // 2. If it's an invite, update DB status to EXPIRED to persist removal
+    if (type === "INVITE") {
+      try {
+        await prisma.organizationInvite.updateMany({
+          where: { id: notificationId },
+          data: { status: "EXPIRED" },
+        });
+      } catch (err) {
+        console.warn("Failed to update invite status in DB on dismiss:", err);
+      }
+    }
+
+    // 3. Clear user's notification cache so UI receives updated list instantly
+    await invalidateUserNotificationCache(userId);
+  } catch (err) {
+    console.error("Error dismissing notification:", err);
   }
 }
 
