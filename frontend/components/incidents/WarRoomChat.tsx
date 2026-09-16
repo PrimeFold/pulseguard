@@ -92,6 +92,9 @@ export function WarRoomChat({
       },
     }),
     messages: initialMessages,
+    onError: (err) => {
+      console.error("[WAR ROOM CHAT] ❌ useChat Stream Error:", err);
+    },
   });
 
   const isBusy = status === "submitted" || status === "streaming";
@@ -198,6 +201,20 @@ export function WarRoomChat({
             </div>
           ) : (
             <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+              {error && (
+                <div className="p-3 bg-red-950/40 border border-red-900/60 text-red-300 font-mono text-xs flex items-center justify-between">
+                  <span>
+                    ⚠️ AGENT ERROR: {error.message || "Execution failed. Check browser console."}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => window.location.reload()}
+                    className="underline text-red-200 hover:text-white cursor-pointer"
+                  >
+                    RETRY
+                  </button>
+                </div>
+              )}
               {messages.map((m) => (
                 <div
                   key={m.id}

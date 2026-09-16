@@ -43,7 +43,7 @@ export function createIncidentTools(organizationId: string) {
           .string()
           .optional()
           .describe('Filter by microservice name, e.g. "auth-service"'),
-        level: z.enum(telemetryLevels).default("ERROR"),
+        level: z.enum(telemetryLevels).optional().describe("Log severity level (FATAL, ERROR, WARN, INFO). Omit to query all log levels."),
         fromDate: z.string().optional().describe("ISO timestamp start window"),
         toDate: z.string().optional().describe("ISO timestamp end window"),
         searchQuery: z
@@ -68,7 +68,7 @@ export function createIncidentTools(organizationId: string) {
         limit?: number;
       }) => {
         try {
-          const result = await getTelemetry({
+          let result = await getTelemetry({
             organizationId,
             service,
             level,
@@ -77,6 +77,14 @@ export function createIncidentTools(organizationId: string) {
             searchQuery,
             limit,
           });
+
+          // Fallback: If initial filter yielded no logs, query latest logs for the organization
+          if ((!result?.data || result.data.length === 0)) {
+            result = await getTelemetry({
+              organizationId,
+              limit,
+            });
+          }
 
           return (result?.data || []).map((log) => ({
             id: log.id,

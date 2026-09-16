@@ -8,6 +8,10 @@ import nodemailer from "nodemailer";
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 export const prisma = new PrismaClient({ adapter });
 export const auth = betterAuth({
+  baseURL:
+    process.env.NODE_ENV === "development"
+      ? "http://localhost:3000"
+      : process.env.BETTER_AUTH_URL || "http://localhost:3000",
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
