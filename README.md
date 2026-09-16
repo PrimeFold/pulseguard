@@ -1,6 +1,37 @@
-# PulseGuard
+<div align="center">
 
-PulseGuard is a self-hosted, multi-tenant incident response platform. It acts as an automated SRE console that ingests raw telemetry logs, clusters related errors, consults organizational runbooks via semantic search, and deploys sandboxed AI agents to diagnose outages and submit Pull Request hotfixes.
+# ⚡ PulseGuard
+
+### *Autonomous Site Reliability Engineering & Multi-Tenant Incident Response Platform*
+
+[![Next.js](https://img.shields.io/badge/Next.js-16.3-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.0-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Bun](https://img.shields.io/badge/Bun-1.4-000000?style=for-the-badge&logo=bun&logoColor=F9F1E1)](https://bun.sh/)
+[![Prisma](https://img.shields.io/badge/Prisma-6.0-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://www.prisma.io/)
+[![PostgreSQL](https://img.shields.io/badge/pgvector-PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://github.com/pgvector/pgvector)
+[![Redis](https://img.shields.io/badge/Redis-Cache-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
+[![Vercel AI SDK](https://img.shields.io/badge/Vercel_AI_SDK-5.0-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://sdk.vercel.ai/)
+
+<br />
+
+PulseGuard is a self-hosted, multi-tenant incident response platform. It acts as an automated SRE console that ingests raw telemetry logs, clusters related errors, consults organizational runbooks via semantic vector search, and deploys sandboxed AI agents to diagnose production outages and submit Pull Request hotfixes.
+
+</div>
+
+---
+
+## 📽️ System Demo Video
+
+<!-- 16:9 Aspect Ratio 1080p Video Placeholder -->
+<div align="center">
+  <a href="#-system-demo-video">
+    <img src="https://placehold.co/1920x1080/09090b/10b981?text=%E2%96%B6+PULSEGUARD+DEMO+VIDEO+(16%3A9+1080p)+%7C+Organization+Console+%E2%9E%94+SRE+AI+War+Room+%E2%9E%94+Telemetry+Retrieval" alt="PulseGuard SRE AI War Room 1080p Video Demo" width="100%" style="border-radius: 8px; border: 1px solid #27272a; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);" />
+  </a>
+  <p align="center">
+    <sub><strong>🎥 Demo Walkthrough (16:9 1080p):</strong> Navigating through the Organization console to the SRE AI War Room, querying live error telemetry, inspecting runbook matches, and generating automated hotfix patches.</sub>
+  </p>
+</div>
 
 ---
 
@@ -55,25 +86,21 @@ PulseGuard is a self-hosted, multi-tenant incident response platform. It acts as
 ## 🛠️ Feature Modules & Core Subsystems
 
 ### 1. Ingestion Engine & Log Fingerprinting
-
 - **Signature Extraction:** Converts high-frequency, dynamic stack traces into static signatures using regex parsing (scrubbing UUIDs, IPv4/IPv6 addresses, hex tokens, timestamps, and numbers) and hashing them using SHA-256.
 - **Sliding-Window Clustering:** Aggregates identical log signatures inside Redis. An incident War Room is triggered only when the error count passes the threshold of 3 errors in 3 minutes, shielding engineers from alert fatigue.
-- **Auto-Pruning TTL:** Automatically runs an asynchronous, non-blocking PostgreSQL clean up routine to remove logs older than 7 days, maintaining a lean database footprint.
+- **Auto-Pruning TTL:** Automatically runs an asynchronous, non-blocking PostgreSQL cleanup routine to remove logs older than 7 days, maintaining a lean database footprint.
 
 ### 2. Multi-Provider AI Engine (BYOM)
-
 - **Dynamic Decryption:** Organizations supply their own API keys for AI providers (Google, Anthropic, OpenAI, Groq, OpenRouter). Keys are encrypted at rest via symmetric AES-256-CBC and decrypted in memory.
-- **Model Discovery:** Resolves active models directly from provider endpoints, caching the options in Redis for 24 hours.
+- **Model Discovery:** Resolves active models directly from provider endpoints, caching options in Redis for 24 hours.
 
 ### 3. Runbook Knowledge Base (RAG)
-
 - **pgvector Indexing:** Chunks PDF and Markdown runbooks into 600-character blocks (with 60-character overlaps) and generates text embeddings.
 - **Semantic Retrieval:** Queries PostgreSQL using cosine similarity (`<=>`) to fetch runbook instructions and injects them as active context into the SRE agent's system prompt.
 
 ### 4. Git Automation & Approvals
-
 - **Octokit Branch Dispatch:** Automates the creation of fix branches and commits updated files using base64 encoding.
-- **Human-in-the-Loop Security:** The AI agent operates in a read-only context. Code modifications are presented as diff cards inside the War Room chat; write operations to repository branches are blocked until an `OWNER` or `ADMIN` clicks "Approve & Open PR".
+- **Human-in-the-Loop Security:** The AI agent operates in a read-only context. Code modifications are presented as diff cards inside the War Room chat; write operations to repository branches are blocked until an `OWNER` or `ADMIN` approves.
 
 ---
 
@@ -87,10 +114,11 @@ PulseGuard is a self-hosted, multi-tenant incident response platform. It acts as
 │   │   └── [orgSlug]/         # Dynamic Organization console
 │   │       ├── incidents/     # Active incident war rooms
 │   │       ├── telemetry/     # Live log explorer
+│   │       ├── ingestion/     # Endpoint credentials & multi-platform integration snippets
 │   │       └── settings/      # Workspace members (RBAC) and AI BYOM setups
 │   └── api/                   # Telemetry ingest, agent stream, invites, and webhooks
 │
-├── components/                # Reusable React components (Vercel flat theme)
+├── components/                # Reusable React components (Vercel flat cybernetic theme)
 ├── lib/                       # Core utilities (AES encryption, RAG, auth, github)
 ├── prisma/                    # Database models and pgvector schemas
 └── tests/                     # Unit and integration test coverage (Vitest)
@@ -102,7 +130,7 @@ PulseGuard is a self-hosted, multi-tenant incident response platform. It acts as
 
 ### 1. Environment Configuration
 
-Create a `.env` file at the root. Follow the schema defined below:
+Create a `.env` file at the repository root and in `frontend/.env`:
 
 ```env
 # Database Connection (pgvector enabled)
@@ -123,10 +151,10 @@ NEXT_PUBLIC_GITHUB_APP_SLUG="<your_github_app_slug>"
 
 ### 2. Initialization & Boot
 
-Install packages, synchronize database models, and start the local compiler:
+Install packages, synchronize database models, and start the development server:
 
 ```bash
-# 1. Install dependencies
+# 1. Install dependencies using Bun
 bun install
 
 # 2. Sync database schemas and generate Prisma client
@@ -137,9 +165,9 @@ bunx prisma generate
 bun run dev
 ```
 
-### 3. Run the Test Suites
+### 3. Run Test Suites
 
-Validate key normalization, encryption logic, RBAC scopes, and GitHub mocking configurations using the Vitest runner:
+Validate key normalization, encryption logic, RBAC scopes, and GitHub mocking configurations:
 
 ```bash
 bun run test
@@ -151,140 +179,90 @@ bun run test
 
 Tenant boundaries and privileges are strictly isolated on the server level:
 
-| Action                        | Allowed Roles                        | Verification Security Check                          |
-| :---------------------------- | :----------------------------------- | :--------------------------------------------------- |
-| **Ingest Logs**               | API Client                           | Matches `x-api-key` header to active organization    |
-| **War Room Access**           | `OWNER`, `ADMIN`, `MEMBER`, `VIEWER` | `requireOrganizationMembership(orgId)`               |
-| **Manage AI Provider Keys**   | `OWNER`, `ADMIN`                     | `requireOrganizationRole(orgId, ['OWNER', 'ADMIN'])` |
-| **Team Management / Invites** | `OWNER`, `ADMIN`                     | `requireOrganizationRole(orgId, ['OWNER', 'ADMIN'])` |
-| **Approve Git PR Dispatch**   | `OWNER`, `ADMIN`                     | `requireOrganizationRole(orgId, ['OWNER', 'ADMIN'])` |
+| Action | Allowed Roles | Verification Security Check |
+| :--- | :--- | :--- |
+| **Ingest Logs** | API Client | Matches `x-api-key` header to active organization |
+| **War Room Access** | `OWNER`, `ADMIN`, `MEMBER`, `VIEWER` | `requireOrganizationMembership(orgId)` |
+| **Manage AI Provider Keys** | `OWNER`, `ADMIN` | `requireOrganizationRole(orgId, ['OWNER', 'ADMIN'])` |
+| **Team Management / Invites** | `OWNER`, `ADMIN` | `requireOrganizationRole(orgId, ['OWNER', 'ADMIN'])` |
+| **Approve Git PR Dispatch** | `OWNER`, `ADMIN` | `requireOrganizationRole(orgId, ['OWNER', 'ADMIN'])` |
 
 ---
 
 ## 🛠️ Troubleshooting & Technical Notes
 
 ### 1. AI Tool Schema Validation (`Date` vs. ISO-8601 String)
-
 - **Issue:** Vercel AI SDK throws `[ZodError]: Invalid input: expected string, received Date at path: ["timestamp"]` when the agent executes `query_telemetry_logs`.
 - **Cause:** The AI SDK strictly validates tool outputs against JSON-serializable primitives. Prisma queries return native JavaScript `Date` objects for `DateTime` fields.
-- **Solution:** All tool executions in `lib/ai/tools.ts` explicitly sanitize timestamps using `toISOString()`:
-  ```ts
-  timestamp: log.timestamp instanceof Date
-    ? log.timestamp.toISOString()
-    : String(log.timestamp);
-  ```
+- **Solution:** All tool executions in `lib/ai/tools.ts` explicitly sanitize timestamps using `toISOString()`.
 
 ### 2. Google Gemini Embedding Model Migration
-
-- **Issue:** `models/text-embedding-004 is not found for API version v1beta, or is not supported for embedContent`.
-- **Cause:** Google's v1beta Gemini endpoint deprecated the `text-embedding-004` model identifier and replaced it with `gemini-embedding-001`.
-- **Solution:** `lib/ai/provider.ts` and `app/api/action/embedding.ts` normalize embedding model resolution to `gemini-embedding-001`.
+- **Issue:** `models/text-embedding-004 is not found for API version v1beta`.
+- **Cause:** Google's v1beta Gemini endpoint deprecated `text-embedding-004` and replaced it with `gemini-embedding-001`.
+- **Solution:** `lib/ai/provider.ts` normalizes embedding model resolution to `gemini-embedding-001`.
 
 ### 3. War Room Multi-Turn Chat Locking
-
 - **Issue:** Chat input and quick action chips become disabled after a single turn.
-- **Cause:** UI input states checked `disabled={status !== "ready"}`. Any stream transition or error status left the input permanently locked.
-- **Solution:** Switched to `isBusy = status === "submitted" || status === "streaming"` in `components/incidents/WarRoomChat.tsx`, allowing continuous conversation and providing an interactive `RETRY LAST` button on error.
+- **Cause:** UI input states checked `disabled={status !== "ready"}`. Any stream transition left the input locked.
+- **Solution:** Switched to `isBusy = status === "submitted" || status === "streaming"` in `components/incidents/WarRoomChat.tsx`.
 
 ### 4. Cloud Redis Idle Socket Disconnects
-
 - **Issue:** `[ioredis] Unhandled error event: AggregateError` in terminal logs.
-- **Cause:** Managed Redis services (e.g. Upstash) automatically terminate idle sockets after 30–60s. Node's EventEmitter flags this if no error listener is attached.
-- **Solution:** Attached a non-blocking `redis.on("error", ...)` handler in `lib/redis.ts` to allow automatic background reconnection without dumping unhandled event stacks.
+- **Cause:** Managed Redis services (Upstash) terminate idle sockets after 30–60s.
+- **Solution:** Attached a non-blocking `redis.on("error", ...)` handler in `lib/redis.ts` for background reconnection.
 
 ### 5. Elimination of Notification Polling Overhead
-
-- **Issue:** Continuous `setInterval` short-polling hammered `/api/notifications` every 60s, spamming terminal/Vercel logs with `GET /api/notifications 200`, wasting database connections on idle tabs, and throwing `net::ERR_CONNECTION_REFUSED` / `Failed to fetch` when the server was stopped.
-- **Cause:** High-frequency timer polling for low-frequency events (organization invites and incident approvals).
-- **Solution:** Replaced blind background polling in `components/notifications/NotificationPanel.tsx` with an On-Demand Event-Driven pattern:
-  1. Single fetch on initial mount to establish the badge count.
-  2. Background `setInterval` completely removed (zero idle server traffic).
-  3. Lazy re-fetch triggered when the user actually clicks the Bell icon to toggle the panel.
-  4. Single revalidation triggered when returning to the browser tab (`visibilitychange`).
+- **Issue:** Continuous `setInterval` short-polling hammered `/api/notifications` every 60s.
+- **Cause:** High-frequency timer polling for low-frequency events.
+- **Solution:** Replaced background polling in `components/notifications/NotificationPanel.tsx` with an On-Demand Event-Driven pattern.
 
 ### 6. AI SDK Monorepo Model Specification Incompatibilities
-
-- **Issue:** `AI_UnsupportedModelVersionError: Unsupported model version v1 for provider "google.generative-ai". AI SDK 5 only supports specification version "v2"`.
-- **Cause:** After monorepo segregation into `frontend` and `backend`, `frontend` ran `ai@7.x` (expecting v2/v3 model specifications) while `backend` instantiated models using `@ai-sdk/google@1.x` and `ai@3.x` (producing v1 model shapes).
-- **Solution:** Synchronized all AI SDK dependencies across workspaces. Upgraded tool definitions in `backend/src/lib/ai/tools.ts` from deprecated `parameters` to the standard `inputSchema` property.
+- **Issue:** `AI_UnsupportedModelVersionError: Unsupported model version v1 for provider "google.generative-ai"`.
+- **Cause:** `frontend` ran `ai@7.x` while `backend` instantiated models using `@ai-sdk/google@1.x` and `ai@3.x`.
+- **Solution:** Synchronized all AI SDK dependencies across workspaces and upgraded tool definitions to use `inputSchema`.
 
 ### 7. Vector Database Dimensionality Inconsistencies (`pgvector`)
-
 - **Issue:** `Raw query failed. Code: 22000. Message: expected 736 dimensions, not 3072`.
-- **Cause:** PostgreSQL schema defined `DocumentChunk.embedding` with a fixed column width of `vector(736)`, while modern embedding providers output larger matrices (such as 3072 from large models).
-- **Solution:** Applied Matryoshka Representation Learning (MRL) truncation (`.slice(0, 736)`) across document ingestion and semantic search queries, eliminating destructive database schema migrations while maintaining semantic clustering accuracy.
+- **Cause:** PostgreSQL schema defined `DocumentChunk.embedding` with a fixed column width of `vector(736)`.
+- **Solution:** Applied Matryoshka Representation Learning (MRL) truncation (`.slice(0, 736)`) across document ingestion and search queries.
 
 ### 8. Client Auth Origin Resolution in Production (Vercel)
-
 - **Issue:** `POST http://localhost:3000/api/auth/sign-in/email net::ERR_CONNECTION_REFUSED` in live Vercel deployments.
-- **Cause:** `auth-client.ts` had a hardcoded `|| "http://localhost:3000"` fallback which the browser used when server environment variables were not exposed with `NEXT_PUBLIC_`.
-- **Solution:** Initialized `createAuthClient()` with no hardcoded fallback, allowing Better Auth to infer and use `window.location.origin` natively in the client.
+- **Cause:** `auth-client.ts` had a hardcoded `|| "http://localhost:3000"` fallback.
+- **Solution:** Initialized `createAuthClient()` with no hardcoded fallback, letting Better Auth infer `window.location.origin`.
 
 ### 9. Workspace Monorepo `.env` Discovery
-
 - **Issue:** `PrismaClientKnownRequestError: ECONNREFUSED` on database queries during local development.
-- **Cause:** In an npm workspaces layout, Next.js starts from the `frontend/` directory and only reads environment files in its own directory, ignoring the root `.env`.
-- **Solution:** Mirrored the environment configuration into `frontend/.env` with explicit `NEXT_PUBLIC_` prefixes for client-facing variables (such as `NEXT_PUBLIC_GITHUB_APP_SLUG`).
+- **Cause:** Next.js starts from `frontend/` and only reads environment files in its own directory.
+- **Solution:** Mirrored configuration into `frontend/.env` with explicit `NEXT_PUBLIC_` prefixes.
 
-### 10. Mobile Viewport 980px Emulation & Responsive Typography Scaling
-
-- **Issue:** On mobile and tablet viewports, the interface appeared miniature, zoomed out, and horizontally clipped. The desktop sidebar occupied ~70% of phone screens, and incident diagnostics/payloads were cut off.
-- **Cause:** In Next.js 14+ App Router, omitting `export const viewport: Viewport` in `layout.tsx` causes mobile WebKit/Blink browsers to simulate a 980px desktop screen, scaling the page down to fit. Additionally, primary labels used micro-utilities (`text-[9px]`, `text-[10px]`), and two-column SRE war rooms had no mobile tab/drawer strategy.
-- **Solution:** Exported `width: "device-width", initialScale: 1` in `frontend/app/layout.tsx`, implemented a responsive slide-out mobile drawer in `DashboardShell.tsx`, converted metric strips into responsive 2x2 to 4x1 grids, added segmented mobile controls for SRE War Room (`WarRoomClientContainer`), scaled typography to crisp `text-xs`/`text-sm` baselines, and built an aerospace-grade cybernetic HUD loader (`GlobalLoader.tsx`).
+### 10. Mobile Viewport 980px Emulation & Responsive Typography
+- **Issue:** Interface appeared miniature and horizontally clipped on mobile viewports.
+- **Cause:** Omitting `export const viewport: Viewport` in Next.js 14+ App Router causes mobile WebKit/Blink browsers to simulate a 980px desktop screen.
+- **Solution:** Exported `width: "device-width", initialScale: 1` in `frontend/app/layout.tsx` and implemented responsive drawers.
 
 ### 11. GitHub App Installation Redirect & Reconfiguration Callback Flow
-
-- **Issue:** After selecting a repository to attach to the organization, the user was navigated to `https://github.com/settings/installations/<installation_id>` on GitHub instead of returning to the PulseGuard dashboard.
-- **Cause:** 
-  1. The GitHub App's "Setup URL" was configured to point to production (`https://pulseguard-app-navy.vercel.app/api/integrations/github/callback`), whereas the user was testing on `localhost:3000` (meaning session cookies did not match the cloud host), or "Redirect on update" was disabled in GitHub App settings.
-  2. When an app has already been installed on an account previously, selecting new repositories is treated by GitHub as an "Update / Configure" action, which defaults to keeping the user on `https://github.com/settings/installations/<id>` rather than triggering a new setup redirect.
-- **Solution:** 
-  1. Added a session-based organization resolution fallback in `/api/integrations/github/callback` so re-configuration redirects without a `state` parameter still link to the user's active workspace.
-  2. Built a direct "Link Installation ID" tool in `GitHubIntegrationCard.tsx` powered by a server action (`linkGithubInstallation`). Users can enter their numeric installation ID (e.g. `159566367`) to immediately sync authorized repositories to their organization without relying on browser redirects.
+- **Issue:** Repository configuration redirects navigated away to GitHub instead of returning to the PulseGuard dashboard.
+- **Cause:** Re-selecting repositories on an existing installation defaults to GitHub settings pages.
+- **Solution:** Built a direct "Link Installation ID" tool in `GitHubIntegrationCard.tsx` powered by `linkGithubInstallation` server action.
 
 ### 12. Direct Telemetry Ingestion Endpoint & Multi-Platform Integration
-
-- **Issue:** After creating an organization, users needed immediate access to their dedicated telemetry ingestion endpoint URL and workspace API keys to configure their deployed microservices, Next.js apps, Docker containers, and Vercel log forwarders.
-- **Cause:** Ingestion keys were buried inside global settings without copy-paste platform snippets, an interactive ping verifier, or prominent navigation in the organization sidebar. Furthermore, `/api/telemetry/ingest` only verified raw organization IDs and rejected rotatable secret keys (`sk_live_...`).
-- **Solution:**
-  1. Built a dedicated workspace route `/[orgSlug]/ingestion` and added `Ingestion API` to the primary navigation in `OrgSidebar.tsx`.
-  2. Enhanced `CreateWorkspaceForm.tsx` step 2 to provide direct 1-click navigation to the Ingestion configuration page upon workspace provisioning.
-  3. Upgraded `/api/telemetry/ingest` to accept both raw Organization IDs and SHA-256 hashed secret API keys (`sk_live_...`) across `Authorization: Bearer <key>`, `x-api-key: <key>`, and query parameter `?apiKey=<key>`.
-  4. Built `IngestionView.tsx` with single-click endpoint/key copy, copy-paste snippets for cURL, Next.js, Node.js/Express, Python, and Vercel Log Drains, plus a live interactive "Send Test Telemetry Log" verifier.
+- **Issue:** Workspace secret API keys were not easily discoverable for microservices and log forwarders.
+- **Solution:** Built dedicated workspace route `/[orgSlug]/ingestion` with copy-paste snippets for cURL, Next.js, Express, Python, and Vercel Log Drains.
 
 ### 13. Public Landing Roaming & Active Session Auth Guards
-
-- **Issue:** Users with an already active session who navigated to `/login` or `/signup` from the public landing page or direct links were repeatedly presented with login/signup credential forms instead of being redirected to their workspace console.
-- **Cause:** Auth pages (`/login`, `/signup`) lacked server-side and client-side session checks, allowing authenticated users to needlessly re-enter credentials or see redundant auth forms.
-- **Solution:**
-  1. Maintained completely unauthenticated public access for the landing page (`/`), marketing sections, and documentation (`/docs`) so any user can freely roam the site.
-  2. Added server-side session evaluation in `frontend/app/(auth)/layout.tsx` with `redirect("/workspaces")` on active session discovery before rendering auth forms.
-  3. Added client-side `authClient.useSession()` watchers in `login/page.tsx` and `signup/page.tsx` with `router.replace("/workspaces")` for instantaneous client-side navigation.
+- **Issue:** Users with active sessions visiting `/login` or `/signup` saw credential forms.
+- **Solution:** Added server-side session checks in `frontend/app/(auth)/layout.tsx` redirecting active sessions to `/workspaces`.
 
 ### 14. Server Action Error Masking & GitHub Integration Resilience
-
-- **Issue:** Submitting a GitHub Installation ID in Workspace Settings triggered `POST /[orgSlug]/settings 500 (Internal Server Error)` and client-side `Minified React error #441`, leaving the workspace unlinked and obscuring the root cause.
-- **Cause:** 
-  1. Next.js App Router in production hides raw server exception messages and stack traces to prevent sensitive information disclosure. When `linkGithubInstallation` threw an uncaught error from `@octokit/auth-app`, Next.js intercepted the rejection and emitted an HTTP 500 status code, causing React 19 production builds to render error boundary #441.
-  2. Octokit failed during JWT token generation because raw `GITHUB_APP_PRIVATE_KEY` values pasted into cloud provider consoles (e.g. Vercel) often lack standard RSA PEM headers (`-----BEGIN RSA PRIVATE KEY-----`) or contain escaped `\n` characters that trigger Node WebCrypto ASN.1 parsing errors (`DOMException [DataError]: Invalid keyData`).
-  3. Mismatches between `GITHUB_APP_ID` and the private key resulted in GitHub API `404 Integration not found` responses during installation token exchanges.
-- **Solution:**
-  1. Wrapped `linkGithubInstallation` in `backend/src/actions/organization.ts` with defensive try/catch blocks that return structured `{ success: false, error: ... }` payloads instead of throwing unhandled exceptions across the server-action boundary.
-  2. Enhanced `GithubIntegrationCard.tsx` to display human-readable inline error feedback directly in the UI without triggering React error boundaries.
-  3. Added `formatPrivateKey()` in `backend/src/lib/github.ts` to automatically normalize raw Base64 strings, chunk 64-character lines, wrap valid RSA PEM headers, and unescape literal newlines.
+- **Issue:** Uncaught server action exceptions triggered generic HTTP 500 errors and React boundary crashes.
+- **Solution:** Wrapped `linkGithubInstallation` in defensive try/catch blocks returning structured `{ success: false, error: ... }` responses.
 
 ### 15. SRE Agent Data Stream Protocol & Empty Tool Output Handling
+- **Issue:** SRE agent executed tools but suppressed text when tool output was empty.
+- **Solution:** Updated `route.ts` to return `result.toDataStreamResponse()` with `maxSteps: 5` and enforced clear Markdown summaries in system prompts.
 
-- **Issue:** The SRE AI Agent in the War Room executed tools (displaying "✓ DONE" status badges) but generated no text response when tool results were empty (e.g. 0 error logs or no matching runbooks found).
-- **Cause:** 
-  1. `frontend/app/api/agent/route.ts` returned `createUIMessageStreamResponse({ stream: toUIMessageStream(...) })`, whereas `@ai-sdk/react`'s `useChat` hook expects standard Vercel AI SDK Data Stream responses (`result.toDataStreamResponse()`).
-  2. `WarRoomChat.tsx` checked `(!m.parts || m.parts.length === 0)` before rendering `m.content`. When `m.parts` contained tool invocation objects without a text part, text in `m.content` was suppressed.
-  3. The system prompt did not explicitly instruct the LLM to emit a Markdown text summary when tool execution returned empty results.
-- **Solution:** 
-  1. Updated `frontend/app/api/agent/route.ts` to return `result.toDataStreamResponse()` with `maxSteps: 5` for multi-step tool calls.
-  2. Normalized tool invocation parsing in `WarRoomChat.tsx` to handle standard `part.type === "tool-invocation"` (`part.toolInvocation`) and updated content fallback logic to `(!m.parts || m.parts.every((p) => p.type !== "text")) && (m as any).content`.
-  3. Added explicit system prompt instructions forcing the model to ALWAYS generate a Markdown text summary explaining what was checked, explicitly stating when no relevant logs/runbooks were found.
-
-
-
-
+### 16. AI SDK 5/7 Stream Chunk Schema Validation & Thought Signature Persistence
+- **Issue:** Client console logged `AI_TypeValidationError` during stream errors and text generation stopped when log levels were mismatched.
+- **Cause:** Emitting raw `{ type: "text" }` violated `UIMessageStream` Zod schemas, Zod schema forced `level: "ERROR"` (excluding `"FATAL"` logs), and stripping `thoughtSignature` suppressed Gemini 3 text.
+- **Solution:** Formatted error stream chunks into `text-start`/`text-delta`/`text-end`, made `level` optional in `query_telemetry_logs` with org-wide fallback, and preserved native `thoughtSignature` context.
