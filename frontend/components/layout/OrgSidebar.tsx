@@ -9,10 +9,12 @@ import {
   Terminal,
   Users,
   Sparkles,
-  ArrowLeftRight,
+  ChevronsUpDown,
   Cpu,
   Radio,
   Settings,
+  Building2,
+  ShieldAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotificationPanel } from "@/components/notifications/NotificationPanel";
@@ -79,15 +81,35 @@ export function OrgSidebar({
       {/* Subtle grid background for the sidebar */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f1f23_1px,transparent_1px),linear-gradient(to_bottom,#1f1f23_1px,transparent_1px)] bg-[size:2rem_2rem] opacity-[0.03] pointer-events-none" />
 
-      <div className={cn("space-y-8 relative z-10", !isMobile && "p-6")}>
-        {/* Workspace Switcher Header */}
-        <div className="flex items-center gap-2.5">
+      <div className={cn("space-y-6 relative z-10", !isMobile && "p-6")}>
+        {/* Sidebar Header Section */}
+        <div className="space-y-4">
+          {/* Row 1: Brand Identifier & Action Center Notification Bell */}
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2.5">
+              <div className="h-7 w-7 bg-white flex items-center justify-center rounded-none font-mono font-bold text-black text-xs shadow-sm">
+                <ShieldAlert className="h-4 w-4 text-black" />
+              </div>
+              <span className="font-mono text-sm font-bold tracking-wider text-white uppercase">
+                PulseGuard
+              </span>
+            </div>
+
+            {/* Notification Bell */}
+            <NotificationPanel align="right" />
+          </div>
+
+          {/* Row 2: Premium Workspace Switcher Card */}
           <Link
             href="/workspaces"
             onClick={onClose}
-            className="flex-1 flex items-center justify-between p-3.5 rounded-none bg-zinc-950 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/90 transition-all active:scale-[0.98] group"
+            title="Switch Workspace"
+            className="flex items-center gap-3 p-3.5 rounded-none bg-zinc-950 border border-zinc-800/80 hover:border-zinc-700 hover:bg-zinc-900/90 transition-all active:scale-[0.98] group w-full shadow-md"
           >
-            <div className="min-w-0 space-y-0.5">
+            <div className="h-9 w-9 bg-purple-950/60 border border-purple-800/80 flex items-center justify-center text-purple-400 font-bold shrink-0">
+              <Building2 className="h-4.5 w-4.5" />
+            </div>
+            <div className="min-w-0 flex-1 space-y-0.5">
               <p className="text-sm font-bold text-white truncate font-mono uppercase tracking-wider">
                 {org.name}
               </p>
@@ -95,15 +117,12 @@ export function OrgSidebar({
                 /{org.slug}
               </p>
             </div>
-            <ArrowLeftRight className="h-4 w-4 text-zinc-400 group-hover:text-white shrink-0 transition-colors" />
+            <ChevronsUpDown className="h-4 w-4 text-zinc-400 group-hover:text-white shrink-0 transition-colors" />
           </Link>
-          <div className="shrink-0 bg-zinc-950 border border-zinc-800 flex items-center justify-center p-1">
-            <NotificationPanel align="left" />
-          </div>
         </div>
 
         {/* Navigation Links */}
-        <div className="space-y-4">
+        <div className="space-y-3 pt-2">
           <div className="text-xs font-mono font-bold text-zinc-500 uppercase tracking-widest px-1">
             Core Modules
           </div>
@@ -122,7 +141,7 @@ export function OrgSidebar({
                   className={cn(
                     "nav-item flex items-center gap-3.5 px-3.5 py-2.5 rounded-none text-sm transition-all duration-200 active:scale-[0.98] border border-transparent cursor-pointer",
                     isActive
-                      ? "bg-zinc-900 border-zinc-800 text-white font-medium"
+                      ? "bg-zinc-900 border-zinc-800 text-white font-bold"
                       : "text-zinc-400 hover:bg-zinc-950 hover:text-zinc-100 hover:border-zinc-900",
                   )}
                 >
@@ -140,11 +159,12 @@ export function OrgSidebar({
         </div>
       </div>
 
-      <div className={cn("p-5 border-t border-zinc-900 bg-zinc-950/50 relative z-10 flex flex-col gap-3", isMobile && "mt-auto")}>
+      {/* Autopilot SRE Status Footer */}
+      <div className={cn("p-5 border-t border-zinc-900 bg-zinc-950/60 relative z-10 flex flex-col gap-2.5", isMobile && "mt-auto")}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Cpu className="h-4 w-4 text-emerald-400" />
-            <span className="text-xs font-mono text-zinc-300 font-bold uppercase tracking-wider">
+            <span className="text-xs font-mono text-zinc-200 font-bold uppercase tracking-wider">
               Autopilot SRE
             </span>
           </div>
