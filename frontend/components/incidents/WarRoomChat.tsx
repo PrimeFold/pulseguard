@@ -385,7 +385,26 @@ export function WarRoomChat({
                     </div>
                   )}
                 </div>
-              ))}
+              {isBusy && (
+                <div className="flex gap-3 justify-start animate-in fade-in-0 duration-200">
+                  <div className="h-6 w-6 rounded-none bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0 mt-0.5">
+                    <Bot className="h-3.5 w-3.5 text-emerald-400 animate-pulse" />
+                  </div>
+
+                  <div className="bg-zinc-950 border border-zinc-900 p-3.5 sm:p-4 rounded-none font-mono text-xs text-zinc-300 space-y-2 max-w-[85%]">
+                    <div className="flex items-center gap-2 text-emerald-400 font-bold uppercase tracking-wider">
+                      <Sparkles className="h-3.5 w-3.5 animate-spin text-emerald-400" />
+                      <span>SRE AGENT REASONING & EXECUTING TOOLS...</span>
+                    </div>
+                    <p className="text-[11px] font-sans text-zinc-400 leading-relaxed">
+                      Analyzing stack trace, querying error logs, and searching runbook knowledge base...
+                    </p>
+                    <div className="w-full bg-zinc-900 h-1 overflow-hidden rounded-none">
+                      <div className="bg-emerald-400 h-full w-2/5 animate-pulse" />
+                    </div>
+                  </div>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
           )}
