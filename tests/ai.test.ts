@@ -42,7 +42,22 @@ describe("AI Credentials & Dynamic Model Provider", () => {
   });
 
   describe("Dynamic Language Model Resolution", () => {
-    it("should resolve to default gemini model if organization does not exist", async () => {
+    it("should throw explicit error if organization does not exist and no env API key is set", async () => {
+      const origKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+      delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+      delete process.env.GEMINI_API_KEY;
+
+      vi.mocked(prisma.organization.findUnique as any).mockResolvedValue(null);
+
+      await expect(getOrgLanguageModel("non-existent-org")).rejects.toThrow(
+        "AI Provider API Key is missing",
+      );
+
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY = origKey || "test-key";
+    });
+
+    it("should resolve to default gemini model if env API key is provided", async () => {
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-api-key-123";
       vi.mocked(prisma.organization.findUnique as any).mockResolvedValue(null);
 
       const model = await getOrgLanguageModel("non-existent-org");
@@ -51,6 +66,7 @@ describe("AI Credentials & Dynamic Model Provider", () => {
     });
 
     it("should resolve to custom configured model if organization defines it", async () => {
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-api-key-123";
       vi.mocked(prisma.organization.findUnique as any).mockResolvedValue({
         aiProvider: "google",
         aiModel: "gemini-1.5-pro",

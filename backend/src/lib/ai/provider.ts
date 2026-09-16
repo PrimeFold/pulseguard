@@ -62,7 +62,6 @@ export async function getOrgLanguageModel(organizationId: string) {
     const decryptedKey = org?.aiApiKeyEncrypted
       ? decryptApiKey(org.aiApiKeyEncrypted)
       : null;
-    const provider = org?.aiProvider?.toLowerCase() || "google";
     const modelName = org?.aiModel || DEFAULT_TEXT_MODEL;
 
     const apiKey =
@@ -71,22 +70,29 @@ export async function getOrgLanguageModel(organizationId: string) {
       process.env.GEMINI_API_KEY ||
       process.env.GOOGLE_API_KEY;
 
-    if (provider === "google" || !provider) {
-      if (apiKey) {
-        const customGoogle = createGoogleGenerativeAI({ apiKey });
-        return customGoogle(modelName);
-      }
-      return google(DEFAULT_TEXT_MODEL);
+    if (!apiKey) {
+      throw new Error(
+        "AI Provider API Key is missing. Please configure your API key under Organization Settings.",
+      );
     }
 
-    if (apiKey) {
-      const customGoogle = createGoogleGenerativeAI({ apiKey });
-      return customGoogle(modelName);
+    const customGoogle = createGoogleGenerativeAI({ apiKey });
+    return customGoogle(modelName);
+  } catch (err: any) {
+    if (err?.message?.includes("API Key is missing")) {
+      throw err;
     }
-
-    return google(DEFAULT_TEXT_MODEL);
-  } catch {
-    return google(DEFAULT_TEXT_MODEL);
+    const fallbackKey =
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+      process.env.GEMINI_API_KEY ||
+      process.env.GOOGLE_API_KEY;
+    if (fallbackKey) {
+      const customGoogle = createGoogleGenerativeAI({ apiKey: fallbackKey });
+      return customGoogle(DEFAULT_TEXT_MODEL);
+    }
+    throw new Error(
+      "AI Provider API Key is missing. Please configure your API key under Organization Settings.",
+    );
   }
 }
 

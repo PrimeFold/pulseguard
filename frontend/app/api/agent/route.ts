@@ -45,14 +45,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const org = await prisma.organization.findUnique({
-      where: { id: organizationId },
+    const org = await prisma.organization.findFirst({
+      where: {
+        OR: [{ id: organizationId }, { slug: organizationId }],
+      },
     });
 
     if (!org) {
       return new Response(
         JSON.stringify({
-          error: `Organization not found for id: ${organizationId}`,
+          error: `Organization not found for identifier: ${organizationId}`,
         }),
         {
           status: 404,
@@ -63,13 +65,28 @@ export async function POST(req: NextRequest) {
 
     let incident = null;
     if (incidentId) {
-      incident = await prisma.incident.findUnique({
-        where: { id: incidentId, organizationId },
+      incident = await prisma.incident.findFirst({
+        where: { id: incidentId, organizationId: org.id },
       });
     }
 
     // Dynamic model resolution for organization
-    const aiModel = await getOrgLanguageModel(org.id);
+    let aiModel: any;
+    try {
+      aiModel = await getOrgLanguageModel(org.id);
+    } catch (modelErr: any) {
+      return new Response(
+        JSON.stringify({
+          error:
+            modelErr.message ||
+            "AI Provider API Key is missing. Please configure your key in Organization Settings.",
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
 
     // Convert messages safely and filter out empty items
     let modelMessages: any[] = [];
