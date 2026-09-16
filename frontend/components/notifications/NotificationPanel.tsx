@@ -187,7 +187,7 @@ export function NotificationPanel({
   // Compute dropdown positioning classes
   const isUpwards = direction === "up";
   const positionClasses = isUpwards
-    ? "absolute bottom-full mb-3 left-0 sm:-left-2 w-[310px] sm:w-[340px] max-w-[calc(100vw-2rem)]"
+    ? "absolute bottom-full mb-3 right-0 w-[245px] sm:w-[250px]"
     : `absolute top-full mt-2 w-[340px] sm:w-[380px] max-w-[calc(100vw-24px)] ${
         align === "left" ? "left-0" : "right-0"
       }`;
