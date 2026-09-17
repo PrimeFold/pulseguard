@@ -179,7 +179,7 @@ export function DocsClientView() {
   {/* Main Layout Container */}
   <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col lg:flex-row gap-8 lg:gap-12 relative z-10">
     {/* Left Sticky Sidebar (Desktop & Tablet) */}
-    <aside className="w-full lg:w-72 shrink-0 py-8 lg:sticky lg:top-14 lg:h-[calc(100vh-3.5rem)] lg:overflow-y-auto space-y-6 font-mono text-xs pr-0 lg:pr-6 border-b lg:border-b-0 lg:border-r border-zinc-900 scrollbar-none self-start">
+    <aside className="w-full lg:w-72 shrink-0 py-8 lg:sticky lg:top-14 space-y-5 font-mono text-xs pr-0 lg:pr-6 border-b lg:border-b-0 lg:border-r border-zinc-900 self-start">
       {/* Quick Filter Search */}
       <div className="relative">
         <Search className="h-3.5 w-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
