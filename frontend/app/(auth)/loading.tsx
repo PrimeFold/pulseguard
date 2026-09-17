@@ -1,5 +1,5 @@
-import { GlobalLoader } from "@/components/ui/GlobalLoader";
+import { PageLoader } from "@/components/ui/PageLoader";
 
 export default function Loading() {
-  return <GlobalLoader message="AUTHENTICATING UPLINK..." fullScreen={false} />;
+  return <PageLoader />;
 }

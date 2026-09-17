@@ -104,24 +104,52 @@ PulseGuard is a self-hosted, multi-tenant incident response platform. It acts as
 
 ---
 
-## 📁 Repository Directory Map
+## 📁 Repository Architecture & Folder Structure
+
+PulseGuard is structured as a high-performance **Monorepo** with dedicated `frontend/` (Next.js 16 App Router) and `backend/` (Server Actions, AI SDK Agents, and Prisma pgvector Data Layer) packages:
 
 ```
-├── app/
-│   ├── (auth)/                # Public Signup and Login
-│   ├── (protected)/           # Multi-Tenant Workspace Shell
-│   │   ├── workspaces/        # Workspace Hub (Select/Create Org & User profile settings)
-│   │   └── [orgSlug]/         # Dynamic Organization console
-│   │       ├── incidents/     # Active incident war rooms
-│   │       ├── telemetry/     # Live log explorer
-│   │       ├── ingestion/     # Endpoint credentials & multi-platform integration snippets
-│   │       └── settings/      # Workspace members (RBAC) and AI BYOM setups
-│   └── api/                   # Telemetry ingest, agent stream, invites, and webhooks
+pulseguard/
+├── backend/                           # Core business logic, data models & backend services
+│   └── src/
+│       ├── actions/                   # Next.js Server Actions (telemetry, incidents, runbooks, auth)
+│       ├── lib/
+│       │   ├── ai/                    # Multi-provider AI engine (BYOM) & SRE agent tool definitions
+│       │   ├── auth.ts                # Better Auth configuration & Prisma adapter
+│       │   ├── authorization.ts       # Multi-tenant RBAC permissions & organization guards
+│       │   ├── cache-invalidation.ts  # Redis key invalidation helpers
+│       │   ├── github.ts              # Octokit client & repository file tree inspector
+│       │   ├── parse-file.ts          # PDF & Markdown runbook chunker
+│       │   ├── rate-limit.ts          # Upstash/Redis sliding-window rate limiters
+│       │   └── redis.ts               # Resilient Redis client with auto-reconnection
+│       └── prisma/
+│           ├── schema.prisma          # PostgreSQL schema with pgvector (embeddings & incidents)
+│           └── seed.ts                # Database seeder with sample organizations and telemetry
 │
-├── components/                # Reusable React components (Vercel flat cybernetic theme)
-├── lib/                       # Core utilities (AES encryption, RAG, auth, github)
-├── prisma/                    # Database models and pgvector schemas
-└── tests/                     # Unit and integration test coverage (Vitest)
+├── frontend/                          # Next.js 16 App Router Web Application
+│   ├── app/
+│   │   ├── (auth)/                    # Public routes (Login, Signup, Forgot Password)
+│   │   ├── (protected)/               # Authenticated multi-tenant workspace shell
+│   │   │   ├── workspaces/            # Workspace Hub (Organization switcher & onboarding)
+│   │   │   └── [orgSlug]/             # Tenant dashboard console
+│   │   │       ├── dashboard/         # Service health scores & metrics overview
+│   │   │       ├── incidents/         # Real-time incident feed & SRE AI War Room
+│   │   │       ├── telemetry/         # Live log explorer, filters & severity search
+│   │   │       ├── ingestion/         # API key ingestion endpoints & client SDK snippets
+│   │   │       └── settings/          # GitHub App setup, RBAC team members & BYOM AI keys
+│   │   ├── api/                       # API routes (AI agent stream, telemetry ingest, webhooks)
+│   │   └── docs/                      # In-app product documentation
+│   │
+│   ├── components/                    # Flat cybernetic UI design system
+│   │   ├── incidents/                 # WarRoomChat, DiffApprovalCard, KnowledgeView
+│   │   ├── telemetry/                 # TelemetryTable, TelemetryFilters
+│   │   ├── settings/                  # GitHubIntegrationCard, ModelConfigCard, TeamMembersList
+│   │   └── ui/                        # Reusable buttons, badges, modals, markdown renderer
+│   └── lib/                           # Frontend utilities, theme configs & client helpers
+│
+├── tests/                             # Unit, integration, and E2E test suites (Vitest)
+├── docker-compose.yml                 # Local PostgreSQL (pgvector) and Redis stack
+└── package.json                       # Monorepo workspace configuration (Bun / Turborepo)
 ```
 
 ---
@@ -286,5 +314,29 @@ Tenant boundaries and privileges are strictly isolated on the server level:
 - **Issue:** Agent tool executions failed with `{ error: "Unauthorized" }` when executing telemetry or runbook searches during background streaming.
 - **Cause:** Tools invoked user-facing Server Actions (`getTelemetry`, `searchKnowledgeBase`) which enforce client HTTP cookie session checks (`requireOrganizationMembership`), failing in decoupled API stream contexts.
 - **Solution:** Refactored `backend/src/lib/ai/tools.ts` to execute queries directly via Prisma within the verified `organizationId` multi-tenant boundary, ensuring 100% reliability for all autonomous tool calls.
+
+### 21. Multi-Turn Intent Precision & Ad-Hoc Prompt Routing
+- **Issue:** Typing arbitrary manual questions in the War Room chat (e.g. *"What happened?"*, *"Why did it fail?"*, *"Hello"*) triggered unintended hotfix code patches.
+- **Cause:** `page.tsx` initialized every conversation with a hardcoded `initialPrompt` containing `"Analyze the logs and propose a fix"`. In multi-turn conversations, the LLM saw `"propose a fix"` in message history and persistently triggered `propose_hotfix`.
+- **Solution:** Updated `initialPrompt` in `(protected)/[orgSlug]/incidents/[id]/page.tsx` to focus on root cause investigation. Structured `route.ts` with strict latest-message evaluation rules ensuring `propose_hotfix` is strictly guarded and only invoked when the latest user message explicitly requests code remediation or a patch.
+
+### 22. Graceful Tool Failure Resilience & Fallback Text Synthesis
+- **Issue:** When a tool call returned empty results (e.g. no indexed runbooks found) or encountered an external error (e.g. repository disconnected), the assistant either stopped abruptly or returned an empty response.
+- **Cause:** Tool execution schemas returned raw error or empty array structures without steering context, causing the LLM to end the step prematurely.
+- **Solution:** Configured structured payload messages in `backend/src/lib/ai/tools.ts` for empty/error states and engineered `frontend/app/api/agent/route.ts` with mandatory final text synthesis rules. When database records or repository access are unavailable, the agent transparently notes the state and seamlessly synthesizes an in-depth engineering analysis and industry-standard mitigation recommendations.
+
+### 23. Real-Time SRE Agent Activity Detection & Cybernetic Thinking Orbs UI
+- **Design Upgrade:** Removed clunky rectangular "reasoning / executing" boxes and raw status badges, replacing them with a sleek, cybernetic pill-shaped loading indicator powered by `thinking-orbs` (2D Canvas-based dotted particle engine).
+- **Stream Activity Detection Engine:**
+  - `WarRoomChat.tsx` inspects the active `useChat` stream state and parses `message.parts` in real-time to determine the exact granular action the autonomous SRE agent is performing:
+    | Agent Tool / Stream Event | Thinking Orb State | Dynamic Pill Label | Detail Description |
+    | :--- | :--- | :--- | :--- |
+    | `search_knowledge_base` | `searching` | `SEARCHING RUNBOOKS` | Querying pgvector embeddings & runbook knowledge base... |
+    | `query_telemetry_logs` | `searching` | `SCANNING LOGS` | Querying error telemetry, stack traces & service metrics... |
+    | `fetch_repo_file` | `connecting` | `FETCHING REPO` | Inspecting repository source files and dependencies... |
+    | `propose_hotfix` | `solving` | `SYNTHESIZING HOTFIX` | Drafting code modifications, commit diff & PR structure... |
+    | Stream Formulating Text | `working` | `REASONING` | Synthesizing root cause findings and formulating diagnosis... |
+    | Client Request Submitted | `listening` | `INITIALIZING` | Ingesting prompt & initializing incident war room session... |
+- **Zero-Clutter Visual Hierarchy:** Tool execution in progress displays the dynamic glowing pill in both the terminal header strip and the message thread. When execution finishes, completed interactive widgets (`<DiffApprovalCard />`, `TELEMETRY LOGS`, `RUNBOOK MATCHES`) render cleanly without residual loading clutter.
 
 

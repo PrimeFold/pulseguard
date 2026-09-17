@@ -59,7 +59,7 @@ export default async function TeamSettingsPage({ params, searchParams }: PagePro
 
       <div className="space-y-6">
         {/* Filter & Search Bar */}
-        <Suspense fallback={<div className="h-10 bg-zinc-950 border border-zinc-900 animate-pulse rounded-none" />}>
+        <Suspense fallback={<div className="h-10 bg-zinc-950 border border-zinc-900 animate-pulse rounded-xl" />}>
           <TeamFilterBar orgSlug={org.slug} />
         </Suspense>
 
@@ -86,9 +86,9 @@ export default async function TeamSettingsPage({ params, searchParams }: PagePro
                     <tr key={member.id} className="hover:bg-zinc-950 transition-colors group">
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-4">
-                          <Avatar className="h-10 w-10 rounded-none border border-zinc-800 bg-zinc-900">
-                            <AvatarImage src={member.user.image || ''} className="rounded-none" />
-                            <AvatarFallback className="rounded-none text-[10px] font-mono font-bold bg-zinc-900 text-purple-400 uppercase">
+                          <Avatar className="h-10 w-10 rounded-xl border border-zinc-800 bg-zinc-900">
+                            <AvatarImage src={member.user.image || ''} className="rounded-xl" />
+                            <AvatarFallback className="rounded-xl text-[10px] font-mono font-bold bg-zinc-900 text-purple-400 uppercase">
                               {member.user.name?.slice(0, 2) || 'OP'}
                             </AvatarFallback>
                           </Avatar>
@@ -152,7 +152,7 @@ export default async function TeamSettingsPage({ params, searchParams }: PagePro
                   size="sm"
                   asChild
                   disabled={!metadata.hasPreviousPage}
-                  className={`rounded-none border-zinc-800 h-8 font-mono text-[10px] uppercase tracking-widest active:scale-[0.98] ${!metadata.hasPreviousPage ? 'opacity-50 cursor-not-allowed bg-black' : 'bg-black hover:bg-zinc-900 text-zinc-300'}`}
+                  className={`rounded-xl border-zinc-800 h-8 font-mono text-[10px] uppercase tracking-widest active:scale-[0.98] ${!metadata.hasPreviousPage ? 'opacity-50 cursor-not-allowed bg-black' : 'bg-black hover:bg-zinc-900 text-zinc-300'}`}
                 >
                   <Link href={`/${org.slug}/settings/teams?page=${currentPage - 1}&q=${q || ''}&role=${role || ''}`}>
                     <ChevronLeft className="h-3 w-3 mr-1" /> Prev
@@ -163,7 +163,7 @@ export default async function TeamSettingsPage({ params, searchParams }: PagePro
                   size="sm"
                   asChild
                   disabled={!metadata.hasNextPage}
-                  className={`rounded-none border-zinc-800 h-8 font-mono text-[10px] uppercase tracking-widest active:scale-[0.98] ${!metadata.hasNextPage ? 'opacity-50 cursor-not-allowed bg-black' : 'bg-black hover:bg-zinc-900 text-zinc-300'}`}
+                  className={`rounded-xl border-zinc-800 h-8 font-mono text-[10px] uppercase tracking-widest active:scale-[0.98] ${!metadata.hasNextPage ? 'opacity-50 cursor-not-allowed bg-black' : 'bg-black hover:bg-zinc-900 text-zinc-300'}`}
                 >
                   <Link href={`/${org.slug}/settings/teams?page=${currentPage + 1}&q=${q || ''}&role=${role || ''}`}>
                     Next <ChevronRight className="h-3 w-3 ml-1" />

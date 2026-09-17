@@ -44,13 +44,13 @@ export function TelemetryChart({ data }: TelemetryChartProps) {
         </span>
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1.5 text-red-400">
-            <span className="h-1.5 w-1.5 rounded-none bg-red-500" /> ERRORS
+            <span className="h-1.5 w-1.5 rounded-xl bg-red-500" /> ERRORS
           </span>
           <span className="flex items-center gap-1.5 text-amber-400">
-            <span className="h-1.5 w-1.5 rounded-none bg-amber-500" /> WARN
+            <span className="h-1.5 w-1.5 rounded-xl bg-amber-500" /> WARN
           </span>
           <span className="flex items-center gap-1.5 text-purple-400">
-            <span className="h-1.5 w-1.5 rounded-none bg-purple-500" /> INFO
+            <span className="h-1.5 w-1.5 rounded-xl bg-purple-500" /> INFO
           </span>
         </div>
       </div>

@@ -41,7 +41,7 @@ export function JoinWorkspaceCard({
   return (
     <div className="space-y-3">
       {error && (
-        <div className="p-2.5 rounded-none bg-red-950/40 border border-red-900/40 text-[11px] text-red-400 font-mono">
+        <div className="p-2.5 rounded-xl bg-red-950/40 border border-red-900/40 text-[11px] text-red-400 font-mono">
           {error}
         </div>
       )}
@@ -49,7 +49,7 @@ export function JoinWorkspaceCard({
       <Button
         onClick={handleJoin}
         disabled={loading}
-        className="w-full bg-white hover:bg-zinc-200 text-black gap-2 font-mono text-xs font-semibold rounded-none"
+        className="w-full bg-white hover:bg-zinc-200 text-black gap-2 font-mono text-xs font-semibold rounded-xl"
       >
         {loading ? (
           <>

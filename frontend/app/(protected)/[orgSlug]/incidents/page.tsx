@@ -34,7 +34,7 @@ export default async function IncidentsPage({
           </div>
         </div>
 
-        <div className="min-h-[50vh] flex flex-col items-center justify-center text-center p-8 bg-black border border-zinc-900 rounded-none space-y-6 shadow-xl">
+        <div className="min-h-[50vh] flex flex-col items-center justify-center text-center p-8 bg-black border border-zinc-900 rounded-xl space-y-6 shadow-xl">
           <div className="h-16 w-16 bg-zinc-950 border border-zinc-800 flex items-center justify-center text-white shrink-0">
             <FaGithub className="h-8 w-8 text-white" />
           </div>
@@ -48,7 +48,7 @@ export default async function IncidentsPage({
           </div>
           <Button
             asChild
-            className="bg-white hover:bg-zinc-200 text-black border border-transparent font-mono text-xs sm:text-sm font-bold tracking-widest uppercase rounded-none h-12 px-6 transition-all duration-300 active:scale-[0.98] cursor-pointer"
+            className="bg-white hover:bg-zinc-200 text-black border border-transparent font-mono text-xs sm:text-sm font-bold tracking-widest uppercase rounded-xl h-12 px-6 transition-all duration-300 active:scale-[0.98] cursor-pointer"
           >
             <Link href={`/${orgSlug}/settings`}>
               <FaGithub className="mr-2.5 h-4.5 w-4.5" />

@@ -148,7 +148,7 @@ export function TelemetryExplorerClient({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleFilter()}
-            className="w-full bg-transparent text-white placeholder:text-zinc-600 text-xs font-mono h-10 pl-10 pr-4 rounded-none focus:outline-none transition-colors"
+            className="w-full bg-transparent text-white placeholder:text-zinc-600 text-xs font-mono h-10 pl-10 pr-4 rounded-xl focus:outline-none transition-colors"
           />
         </div>
 
@@ -156,7 +156,7 @@ export function TelemetryExplorerClient({
           <select
             value={selectedService}
             onChange={(e) => setSelectedService(e.target.value)}
-            className="h-10 bg-black text-zinc-300 text-[10px] font-mono uppercase tracking-widest px-3 border-none focus:ring-0 appearance-none rounded-none cursor-pointer hover:bg-zinc-950 transition-colors"
+            className="h-10 bg-black text-zinc-300 text-[10px] font-mono uppercase tracking-widest px-3 border-none focus:ring-0 appearance-none rounded-xl cursor-pointer hover:bg-zinc-950 transition-colors"
           >
             <option value="ALL">ALL SERVICES</option>
             {services.map((srv) => (
@@ -169,7 +169,7 @@ export function TelemetryExplorerClient({
           <select
             value={selectedLevel}
             onChange={(e) => setSelectedLevel(e.target.value)}
-            className="h-10 bg-black text-zinc-300 text-[10px] font-mono uppercase tracking-widest px-3 border-none focus:ring-0 appearance-none rounded-none cursor-pointer hover:bg-zinc-950 transition-colors"
+            className="h-10 bg-black text-zinc-300 text-[10px] font-mono uppercase tracking-widest px-3 border-none focus:ring-0 appearance-none rounded-xl cursor-pointer hover:bg-zinc-950 transition-colors"
           >
             <option value="ALL">ALL LEVELS</option>
             <option value="ERROR">ERROR / FATAL</option>
@@ -180,7 +180,7 @@ export function TelemetryExplorerClient({
           <button
             onClick={handleFilter}
             disabled={isPending}
-            className="h-10 px-4 bg-white hover:bg-zinc-200 text-black text-[10px] font-mono font-bold tracking-widest uppercase transition-colors active:scale-[0.98] flex items-center gap-2 rounded-none"
+            className="h-10 px-4 bg-white hover:bg-zinc-200 text-black text-[10px] font-mono font-bold tracking-widest uppercase transition-colors active:scale-[0.98] flex items-center gap-2 rounded-xl"
           >
             <RefreshCw
               className={`h-3 w-3 ${isPending ? "animate-spin" : ""}`}

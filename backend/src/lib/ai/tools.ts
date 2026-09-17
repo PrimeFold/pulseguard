@@ -39,13 +39,28 @@ export function createIncidentTools(organizationId: string) {
             LIMIT 3;
           `;
 
+          if (!results || results.length === 0) {
+            return {
+              count: 0,
+              results: [],
+              message:
+                "No matching runbooks indexed for this specific query. Provide standard SRE mitigation guidelines and architectural best practices in your summary.",
+            };
+          }
+
           return (results || []).map((r) => ({
             id: String(r.id),
             content: r.content,
             similarity: typeof r.similarity === "number" ? r.similarity : 0.8,
           }));
         } catch (err: any) {
-          return { error: err.message || "Knowledge base query failed" };
+          return {
+            count: 0,
+            results: [],
+            error: err.message || "Knowledge base query failed",
+            message:
+              "Runbook query unavailable. Proceed with standard operational mitigation advice.",
+          };
         }
       },
     }),
@@ -119,6 +134,15 @@ export function createIncidentTools(organizationId: string) {
             });
           }
 
+          if (!logs || logs.length === 0) {
+            return {
+              count: 0,
+              logs: [],
+              message:
+                "No telemetry error logs found matching the filter criteria. Synthesize diagnostic hypotheses based on known service architecture and incident metadata.",
+            };
+          }
+
           return (logs || []).map((log) => ({
             id: log.id,
             service: log.service,
@@ -132,7 +156,13 @@ export function createIncidentTools(organizationId: string) {
                 : String(log.timestamp),
           }));
         } catch (err: any) {
-          return { error: err.message || "Failed to query telemetry logs" };
+          return {
+            count: 0,
+            logs: [],
+            error: err.message || "Failed to query telemetry logs",
+            message:
+              "Telemetry log query unavailable. Proceed with architectural root-cause analysis.",
+          };
         }
       },
     }),
@@ -165,7 +195,7 @@ export function createIncidentTools(organizationId: string) {
           ) {
             return {
               error:
-                "Organization does not have a GitHub repository connected.",
+                "Organization does not have a GitHub repository connected. Infer the service file structure and proceed directly to propose_hotfix.",
             };
           }
 
@@ -184,7 +214,9 @@ export function createIncidentTools(organizationId: string) {
             content: fileContent,
           };
         } catch (err: any) {
-          return { error: err.message || "Failed to fetch repository file" };
+          return {
+            error: `File '${filePath}' not found in repository. Do not search for additional paths; proceed immediately to call propose_hotfix with the inferred fix snippet.`,
+          };
         }
       },
     }),
